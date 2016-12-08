@@ -40,6 +40,13 @@ ModelImporter:
     4300008: LMC_indicator_R
     4300010: LMC_headlights
     4300012: LMC_wheel
+    6400000: LMC_brakes
+    6400002: LMC_headlights
+    6400004: LMC_indicator_L
+    6400006: LMC_indicator_R
+    6400008: LMC_reverselights
+    6400010: LMC_wheel
+    6400012: //RootNode
   materials:
     importMaterials: 1
     materialName: 0
@@ -66,7 +73,7 @@ ModelImporter:
     lODScreenPercentages: []
     globalScale: 1
     meshCompression: 0
-    addColliders: 0
+    addColliders: 1
     importBlendShapes: 1
     swapUVChannels: 0
     generateSecondaryUV: 0

@@ -3,7 +3,7 @@ using System.Collections;
 
 public class PlayerCameraScript : MonoBehaviour {
 
-    public PlayerScript myPlayer;
+    public CarScript myPlayer;
 
     float turnSpeed = 90;
     float distanceFromPlayer = 7.5f;
@@ -23,7 +23,7 @@ public class PlayerCameraScript : MonoBehaviour {
 
     void FixedUpdate()
     {
-        Vector3 input = new Vector3(Input.GetAxisRaw(myPlayer.vertical2), Input.GetAxisRaw(myPlayer.horizontal2), 0);
+        Vector3 input = new Vector3(Input.GetAxisRaw("Vertical2"+myPlayer.playerInputTag), Input.GetAxisRaw("Horizontal2"+myPlayer.playerInputTag), 0);
 
         curPos += input * turnSpeed * Time.deltaTime;
 

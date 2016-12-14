@@ -24,6 +24,9 @@ public class CarScript : MonoBehaviour
 
     Rigidbody rb;
 
+    Vector3 bodyVelocity, bodyAngularVelocity;
+
+    float flipTimer = 0;
 
     //Don't worry about these
     [HideInInspector]
@@ -36,8 +39,6 @@ public class CarScript : MonoBehaviour
     // Use this for initialization
     void Start()
     {
-        //Physics.gravity = new Vector3(0, -60, 0);
-
         playerInputTag = "_P" + playerIndex;
 
         wheelLocalPositions = new Vector3[wheels.Length];
@@ -50,6 +51,9 @@ public class CarScript : MonoBehaviour
         }
 
         rb = GetComponent<Rigidbody>();
+
+        bodyVelocity = Vector3.zero;
+        bodyAngularVelocity = Vector3.zero;
     }
 
     // Update is called once per frame
@@ -68,7 +72,7 @@ public class CarScript : MonoBehaviour
                 wheelIsGrounded[i] = isWheelGrounded(wheels[i], i);
                 
 
-                if (wheelIsGrounded[i])
+                if (wheelIsGrounded[i] && i<=1)
                 {
                     rb.angularDrag += targetAngularDrag/4;
 
@@ -87,15 +91,11 @@ public class CarScript : MonoBehaviour
                 {
                     float curTorqueSpeed = turnSpeed * currentWheelSpeed;
 
-                   // if (currentWheelSpeed < 2)
-                        //curTorqueSpeed = 0;
-
                     curTorqueSpeed = Mathf.Clamp(curTorqueSpeed, -turnSpeed, turnSpeed);
 
                     if (wheelIsGrounded[i])
                     {
                         rb.AddTorque(transform.up * Input.GetAxisRaw("Horizontal" + playerInputTag) * (curTorqueSpeed), ForceMode.Acceleration);
-                        //rb.transform.position -= transform.forward * rb.angularVelocity.magnitude/50;
                     }
 
                     float lerpValue = 0.5f + Input.GetAxis("Horizontal" + playerInputTag) * 0.5f;
@@ -117,6 +117,52 @@ public class CarScript : MonoBehaviour
         {
             RotateWheel(wheels[i]);
         }
+
+        //Suspension
+        carBody.transform.position += Vector3.up * -rb.velocity.y * 0.1f;
+
+        carBody.transform.localPosition = Vector3.ClampMagnitude(carBody.transform.localPosition * 0.01f, 0.1f);
+        carBody.transform.localPosition = Vector3.Lerp(carBody.transform.localPosition, Vector3.zero, 1 * Time.deltaTime);
+        carBody.transform.localEulerAngles = Vector3.Lerp(carBody.transform.localEulerAngles, Vector3.zero, 3 * Time.deltaTime);
+    }
+
+
+
+    IEnumerator RollBackOver()
+    {
+        while(transform.up.y<0.995f)
+        {
+            //rb.useGravity = false;
+            //rb.isKinematic = true;
+            //Debug.Log("ROLLIN");
+            rb.rotation = Quaternion.Lerp(rb.rotation, Quaternion.LookRotation(transform.forward, Vector3.up), 5 * Time.deltaTime);
+            Debug.DrawLine(transform.position, transform.position + Vector3.up, Color.red);
+            //rb.AddForce(Vector3.up * 11, ForceMode.Acceleration);
+            yield return new WaitForSeconds(0.01f);
+        }
+
+        rb.useGravity = true;
+        //rb.isKinematic = false;
+    }
+
+    void OnCollisionStay()
+    {
+        if (!wheelIsGrounded[0] && !wheelIsGrounded[1] && rb.velocity.magnitude<5)
+        {
+            flipTimer += Time.deltaTime;
+
+            if(flipTimer>3)
+                StartCoroutine("RollBackOver");
+        }
+        else
+        {
+            flipTimer = 0;
+        }
+    }
+
+    void OnCollisionEnter(Collision col)
+    {
+        carBody.transform.position += rb.velocity * 0.01f;
     }
 
     void RotateWheel(Transform wheel)
@@ -134,14 +180,12 @@ public class CarScript : MonoBehaviour
 
         wheelTorque = localVelo.z;
         localVelo.x = Mathf.Lerp(localVelo.x, 0, cancelHoriForce * (1) * Time.deltaTime);
-        //localVelo.x *= 0.8f;
 
         rb.velocity = transform.TransformDirection(localVelo);
     }
 
     bool isWheelGrounded(Transform wheel, int index)
     {
-        //wheelLocalPositions[index] = wheel.transform.local
         bool ret;
 
         ret = Physics.Raycast(wheel.transform.position, -transform.up, out wheelRaycasts[index], wheelSize, LayerMask.GetMask("Default"), QueryTriggerInteraction.Ignore);

@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class PlayerScript : MonoBehaviour {
+public class OldCarScript : MonoBehaviour {
 
     public WheelCollider[] wheels;
     public Transform[] visualWheels;

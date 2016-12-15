@@ -37,9 +37,9 @@ public class CarScript : MonoBehaviour
     public float cancelHoriForce = 20;
 
     // Use this for initialization
-    void Start()
+    void Awake()
     {
-        playerInputTag = "_P" + playerIndex;
+        playerInputTag = "_P" + 1;
 
         wheelLocalPositions = new Vector3[wheels.Length];
         wheelIsGrounded = new bool[wheels.Length];
@@ -54,6 +54,19 @@ public class CarScript : MonoBehaviour
 
         bodyVelocity = Vector3.zero;
         bodyAngularVelocity = Vector3.zero;
+
+        GameController.currentPlayers++;
+        GameController.singleton.players[playerIndex-1] = this;
+    }
+
+    void Start()
+    {
+        
+    }
+
+    void OnDestroy()
+    {
+        GameController.currentPlayers--;
     }
 
     // Update is called once per frame
@@ -85,6 +98,8 @@ public class CarScript : MonoBehaviour
 
                     rb.AddForce(-transform.up * currentWheelSpeed * 0.99525f);
                     PreventSkidding();
+
+                    //carBody.transform.localEulerAngles += Vector3.right * currentWheelSpeed * 0.1f;
                 }
 
                 if(i>1)
@@ -121,9 +136,22 @@ public class CarScript : MonoBehaviour
         //Suspension
         carBody.transform.position += Vector3.up * -rb.velocity.y * 0.1f;
 
-        carBody.transform.localPosition = Vector3.ClampMagnitude(carBody.transform.localPosition * 0.01f, 0.1f);
+        carBody.transform.localPosition = Vector3.ClampMagnitude(carBody.transform.localPosition * 0.01f, 0.15f);
         carBody.transform.localPosition = Vector3.Lerp(carBody.transform.localPosition, Vector3.zero, 1 * Time.deltaTime);
-        carBody.transform.localEulerAngles = Vector3.Lerp(carBody.transform.localEulerAngles, Vector3.zero, 3 * Time.deltaTime);
+
+        Vector3 targetEuler = Vector3.zero;
+        Vector3 veloLocal = transform.InverseTransformDirection(-rb.velocity);
+        Vector3 veloEuler = veloLocal;
+
+        veloEuler.x = veloLocal.z * 0.015f;
+        veloEuler.z = veloLocal.x * 0.6f;
+        veloEuler.y = veloLocal.x * 0.5f;
+
+        veloEuler = Vector3.ClampMagnitude(veloEuler, 2);
+
+        carBody.transform.eulerAngles += veloEuler * 0.925f;
+        carBody.transform.localRotation = Quaternion.Lerp(carBody.transform.localRotation, Quaternion.Euler(targetEuler), 11 * Time.deltaTime);
+        carBody.transform.localPosition += Vector3.up * (Mathf.Abs(veloEuler.x * 0.01f) + Mathf.Abs(veloEuler.z * 0.01f));
     }
 
 

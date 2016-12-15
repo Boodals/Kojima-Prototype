@@ -3,12 +3,27 @@ using System.Collections;
 
 public class PlayerCameraScript : MonoBehaviour {
 
+    [System.Serializable]
+    public struct CameraInfo
+    {
+        public ViewStyles viewStyle;
+        public ScreenPositions positionOnScreen;
+
+        public int followThisPlayer;
+        public bool[] followThesePlayers;
+    }
+
+    [System.Serializable]
+    public enum ScreenPositions { TopLeft, TopRight, BottomLeft, BottomRight, TopHalf, BottomHalf, FullScreen }
+
     Camera cam;
 
     public enum ViewStyles { ThirdPerson, Overhead}
-    public ViewStyles currentCameraType = ViewStyles.ThirdPerson;
+    public ViewStyles currentViewStyle = ViewStyles.ThirdPerson;
 
-    public CarScript[] myPlayers;
+    //public CarScript[] myPlayers;
+    public CarScript mainPlayer;
+    public bool[] followingThesePlayers;
 
     float turnSpeed = 90;
     float distanceFromPlayer = 7.5f;
@@ -21,17 +36,80 @@ public class PlayerCameraScript : MonoBehaviour {
     float targetFOV = 65;
 
 	// Use this for initialization
-	void Start () {
-        curPos = -myPlayers[0].transform.eulerAngles;
-        transform.position = myPlayers[0].transform.position;
+	void Awake () {
 
+        followingThesePlayers = new bool[4];
         cam = GetComponent<Camera>();
 	}
+
+    void Start()
+    {
+        if (mainPlayer)
+        {
+            curPos = -mainPlayer.transform.eulerAngles;
+            transform.position = mainPlayer.transform.position;
+        }
+    }
 	
 	// Update is called once per frame
 	void Update () {
 	
 	}
+
+    public void SetupCamera(CameraInfo newInfo)
+    {
+        mainPlayer = null;
+
+        if (newInfo.followThisPlayer > 0)
+            mainPlayer = GameController.singleton.players[newInfo.followThisPlayer - 1];
+
+        followingThesePlayers = newInfo.followThesePlayers;
+        SwitchViewStyle(newInfo.viewStyle);
+
+        switch(newInfo.positionOnScreen)
+        {
+            case ScreenPositions.BottomLeft:
+                MoveScreenToHere(new Vector2(0, 0), new Vector2(0.5f, 0.5f));
+                break;
+            case ScreenPositions.BottomRight:
+                MoveScreenToHere(new Vector2(0.5f, 0), new Vector2(0.5f, 0.5f));
+                break;
+            case ScreenPositions.TopLeft:
+                MoveScreenToHere(new Vector2(0, 0.5f), new Vector2(0.5f, 0.5f));
+                break;
+            case ScreenPositions.TopRight:
+                MoveScreenToHere(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
+                break;
+
+            case ScreenPositions.TopHalf:
+                MoveScreenToHere(new Vector2(0.0f, 0.5f), new Vector2(1f, 0.5f));
+                break;
+            case ScreenPositions.BottomHalf:
+                MoveScreenToHere(new Vector2(0.0f, 0.0f), new Vector2(1f, 0.5f));
+                break;
+
+            case ScreenPositions.FullScreen:
+                MoveScreenToHere(new Vector2(0.0f, 0.0f), new Vector2(1f, 1f));
+                break;
+        }
+    }
+
+    public void SwitchViewStyle(ViewStyles newViewStyle)
+    {
+        currentViewStyle = newViewStyle;
+
+        if(newViewStyle==ViewStyles.ThirdPerson && mainPlayer == null)
+        {
+            for(int i=0; i<followingThesePlayers.Length; i++)
+            {
+                if(followingThesePlayers[i])
+                {
+                    mainPlayer = GameController.singleton.players[i];
+                    i = 99;
+                }
+            }
+        }
+    }
 
     void ThirdPerson(Vector3 input)
     {
@@ -43,9 +121,9 @@ public class PlayerCameraScript : MonoBehaviour {
         Vector3 backwards = new Vector3(0, 0, -distanceFromPlayer);
         Quaternion rot = Quaternion.Euler(curPos);
 
-        transform.position = Vector3.Lerp(transform.position, myPlayers[0].transform.position + (rot * backwards), 8 * Time.deltaTime);
+        transform.position = Vector3.Lerp(transform.position, mainPlayer.transform.position + (rot * backwards), 8 * Time.deltaTime);
 
-        transform.LookAt(myPlayers[0].transform.position);
+        transform.LookAt(mainPlayer.transform.position);
     }
 
     Vector3 GetAveragePosition(CarScript[] players)
@@ -56,7 +134,8 @@ public class PlayerCameraScript : MonoBehaviour {
 
         for(int i=0; i<playerPos.Length; i++)
         {
-            playerPos[i] = players[i].transform.position;
+            if(players[i])
+                playerPos[i] = players[i].transform.position;
         }
 
         pos = GetAveragePosition(playerPos);
@@ -81,15 +160,25 @@ public class PlayerCameraScript : MonoBehaviour {
 
     void Overhead(Vector3 input)
     {
-        Vector3 pos = GetAveragePosition(myPlayers);
-        float height = 15;
+        Vector3 pos = Vector3.zero;
 
+        if (!mainPlayer)
+            pos = GetAveragePosition(GameController.singleton.players);
+        else
+            pos = mainPlayer.transform.position;
+
+        float height = 15;
         float distance = 0;
 
-        for(int i=0; i<myPlayers.Length-1; i++)
+        for(int i=0; i< GameController.singleton.players.Length-1; i++)
         {
-            if(i<myPlayers.Length)
-                distance += Vector3.Distance(myPlayers[i].transform.position, myPlayers[i + 1].transform.position);
+            if (i < GameController.singleton.players.Length)
+            {
+                if (GameController.singleton.players[i] && GameController.singleton.players[i+1] && followingThesePlayers[i])
+                {
+                    distance += Vector3.Distance(GameController.singleton.players[i].transform.position, GameController.singleton.players[i + 1].transform.position);
+                }
+            }
         }
 
         targetFOV = 80 + distance * 0.5f;
@@ -106,9 +195,12 @@ public class PlayerCameraScript : MonoBehaviour {
 
     void FixedUpdate()
     {
-        Vector3 input = new Vector3(Input.GetAxisRaw("Vertical2" + myPlayers[0].playerInputTag), Input.GetAxisRaw("Horizontal2" + myPlayers[0].playerInputTag), 0);
+        Vector3 input = Vector3.zero;
+        
+        if(mainPlayer)
+            input = new Vector3(Input.GetAxisRaw("Vertical2" + mainPlayer.playerInputTag), Input.GetAxisRaw("Horizontal2" + mainPlayer.playerInputTag), 0);
 
-        switch(currentCameraType)
+        switch(currentViewStyle)
         {
             case ViewStyles.ThirdPerson:
                 ThirdPerson(input);
@@ -119,5 +211,14 @@ public class PlayerCameraScript : MonoBehaviour {
         }
 
         cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, targetFOV, 4 * Time.deltaTime);
+    }
+
+    public void MoveScreenToHere(Vector2 _newPos, Vector2 _size)
+    {
+        Rect newRect = cam.rect;
+        newRect.position = _newPos;
+        newRect.size = _size;
+
+        cam.rect = newRect;
     }
 }

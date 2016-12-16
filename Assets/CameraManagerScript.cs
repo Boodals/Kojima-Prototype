@@ -6,7 +6,6 @@ public class CameraManagerScript : MonoBehaviour {
     //These are for convenience when you set up a new view
     public static bool[] FollowPlayerOne, FollowPlayerTwo, FollowPlayerThree, FollowPlayerFour, FollowAll;
 
-
     public static CameraManagerScript singleton;
 
     [System.Serializable]

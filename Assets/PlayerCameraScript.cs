@@ -56,6 +56,11 @@ public class PlayerCameraScript : MonoBehaviour {
 	
 	}
 
+    public Camera GetCameraComponent()
+    {
+        return cam;
+    }
+
     public void SetupCamera(CameraInfo newInfo)
     {
         mainPlayer = null;
@@ -113,16 +118,28 @@ public class PlayerCameraScript : MonoBehaviour {
 
     void ThirdPerson(Vector3 input)
     {
-        targetFOV = 65;
+        targetFOV = 60 + mainPlayer.currentWheelSpeed * 0.55f;
         curPos += input * turnSpeed * Time.deltaTime;
 
         curPos.x = Mathf.Clamp(curPos.x, 10, 60);
 
-        Vector3 backwards = new Vector3(0, 0, -distanceFromPlayer);
+        Vector3 backwards = new Vector3(0, 0, -(distanceFromPlayer));
         Quaternion rot = Quaternion.Euler(curPos);
 
-        transform.position = Vector3.Lerp(transform.position, mainPlayer.transform.position + (rot * backwards), 8 * Time.deltaTime);
+        Vector3 targetPos = Vector3.zero;
+        
+        if(mainPlayer)
+            targetPos = mainPlayer.transform.position + (rot * backwards);
 
+        //Debug.DrawLine(mainPlayer.transform.position + Vector3.up, targetPos, Color.green);
+        RaycastHit rH;
+        if(Physics.Linecast(mainPlayer.transform.position + mainPlayer.transform.up, targetPos, out rH, LayerMask.GetMask("Default")))
+        {
+            //Debug.Log(rH.collider.gameObject.name);
+            targetPos = rH.point;
+        }
+
+        transform.position = Vector3.Lerp(transform.position, targetPos + mainPlayer.GetVelocity() * Time.deltaTime, 8 * Time.deltaTime);
         transform.LookAt(mainPlayer.transform.position);
     }
 
@@ -181,10 +198,10 @@ public class PlayerCameraScript : MonoBehaviour {
             }
         }
 
-        targetFOV = 80 + distance * 0.5f;
+        targetFOV = 80 + distance * 0.35f;
         targetFOV = Mathf.Clamp(targetFOV, 80, 110);
 
-        height += distance * 0.2f;
+        height += distance * 0.1f;
 
         pos += Vector3.up * height;
 

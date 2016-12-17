@@ -118,7 +118,7 @@ public class PlayerCameraScript : MonoBehaviour {
 
     void ThirdPerson(Vector3 input)
     {
-        targetFOV = 60 + mainPlayer.currentWheelSpeed * 0.55f;
+        targetFOV = 60 + mainPlayer.currentWheelSpeed * 0.15f;
         curPos += input * turnSpeed * Time.deltaTime;
 
         curPos.x = Mathf.Clamp(curPos.x, 10, 60);

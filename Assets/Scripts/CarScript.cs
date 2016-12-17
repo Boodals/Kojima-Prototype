@@ -61,7 +61,7 @@ public class CarScript : MonoBehaviour
     // Use this for initialization
     void Awake()
     {
-        playerInputTag = "_P" + 1;
+        playerInputTag = "_P" + playerIndex;
 
         wheelLocalPositions = new Vector3[wheels.Length];
         wheelIsGrounded = new bool[wheels.Length];

@@ -1,11 +1,18 @@
 ﻿using UnityEngine;
-using System.Collections;
+using System.Collections.Generic;
 
-public abstract class GameModeBase : MonoBehaviour
+/// <summary>
+/// Base GameMode class. Inherit off this to create a custom GameMode.
+/// </summary>
+public abstract class GameModeBase : ScriptableObject
 {
+	[SerializeField, Range(2, 4)]
+	private int numTeams;
+
+	
 
 	/// <summary>
-	/// Called once when the game is loaded
+	/// Called once when the game/application is loaded
 	/// </summary>
 	protected abstract void GameModeLoaded();
 
@@ -31,7 +38,5 @@ public abstract class GameModeBase : MonoBehaviour
 	/// Called when the countdown has ended
 	/// </summary>
 	protected abstract void GameStart();
-
-
-
+	
 }

@@ -40,6 +40,10 @@ public class CarScript : MonoBehaviour
 
     Vector3[] wheelLocalPositions;
 
+
+    TrailRenderer[] skidMarkTrails;
+    public GameObject skidMarkPrefab;
+
     Rigidbody rb;
 
     Vector3 bodyVelocity, bodyAngularVelocity;
@@ -84,6 +88,50 @@ public class CarScript : MonoBehaviour
     void Start()
     {
         ApplyCarInfo(new CarInfo(100, 9, 12, 0.65f, CarInfo.DriveMode.AllWheels));
+        CreateSkidMarkTrails();
+    }
+
+    void CreateSkidMarkTrails()
+    {
+        skidMarkTrails = new TrailRenderer[wheels.Length];
+
+        for(int i=0; i<wheels.Length; i++)
+        {
+            skidMarkTrails[i] = GameObject.Instantiate<GameObject>(skidMarkPrefab).GetComponent<TrailRenderer>();
+            skidMarkTrails[i].enabled = false;
+            skidMarkTrails[i].transform.SetParent(wheels[i], true);
+            skidMarkTrails[i].transform.localPosition = wheels[i].transform.position - (Vector3.up * myInfo.wheelSize);
+            skidMarkTrails[i].enabled = true;
+        }
+    }
+
+    void ManageSkidMarkTrails()
+    {
+        if (drifting)
+        {
+            for (int i = 0; i < skidMarkTrails.Length; i++)
+            {
+                skidMarkTrails[i].transform.position = wheels[i].transform.position - (Vector3.up * myInfo.wheelSize);
+            }
+        }
+        else
+        {
+            DisconnectSkidMarkTrails();
+        }
+    }
+
+    void DisconnectSkidMarkTrails()
+    {
+        for (int i = 0; i < skidMarkTrails.Length; i++)
+        {
+            if (skidMarkTrails[i])
+            {
+                skidMarkTrails[i].transform.SetParent(null);
+                Destroy(skidMarkTrails[i], 30);
+            }
+        }
+
+        skidMarkTrails = new TrailRenderer[0];
     }
 
     void OnDestroy()
@@ -106,7 +154,7 @@ public class CarScript : MonoBehaviour
     {
         float currentVelocity = rb.velocity.magnitude;
         currentWheelSpeed = currentVelocity * Vector3.Dot(rb.velocity.normalized, -transform.forward);
-
+        ManageSkidMarkTrails();
         rb.angularDrag = 0;
 
         if (playersCanMove && canIMove)
@@ -115,9 +163,14 @@ public class CarScript : MonoBehaviour
             drifting = Input.GetKey("joystick " + playerIndex + " button 1");
 
             if (drifting)
+            {
                 cancelHoriForce = 0;
+
+                //if (skidMarkTrails.Length == 0)
+                    //CreateSkidMarkTrails();            
+            }
             else
-                cancelHoriForce = Mathf.Lerp(cancelHoriForce, 3, 3 * Time.deltaTime);
+                cancelHoriForce = Mathf.Lerp(cancelHoriForce, 3, 1 * Time.deltaTime);
 
             //Give each wheel a chance to push the car if grounded
             for (int i = 0; i < wheels.Length; i++)
@@ -143,12 +196,19 @@ public class CarScript : MonoBehaviour
 
                 if (!wheelIsGrounded[i])
                     thisWheelCanDrive = false;
-                else
-                    PreventSkidding();
+
+                if (wheelIsGrounded[i])
+                {
+                   
+                    {
+                        PreventSkidding();
+                    }
+                }
 
                 if (thisWheelCanDrive)
                 {
-                    rb.angularDrag += targetAngularDrag/4;
+                    if ((drifting && i > 1) || !drifting)
+                        rb.angularDrag += targetAngularDrag/4;
 
                     float forwardsMultiplier = Input.GetAxisRaw("Acceleration" + playerInputTag) + (-Input.GetAxisRaw("Brake" + playerInputTag));
 

@@ -148,23 +148,30 @@ public class PlayerCameraScript : MonoBehaviour {
         Vector3 pos = Vector3.zero;
 
         Vector3[] playerPos = new Vector3[players.Length];
+        int playersToFollow = 0;
 
         for(int i=0; i<playerPos.Length; i++)
         {
-            if(players[i])
+            if (players[i] && followingThesePlayers[i])
+            {
                 playerPos[i] = players[i].transform.position;
+                playersToFollow++;
+            }
         }
 
-        pos = GetAveragePosition(playerPos);
+        pos = GetAveragePosition(playerPos, playersToFollow);
 
         return pos;
     }
 
-    Vector3 GetAveragePosition(Vector3[] positions)
+    Vector3 GetAveragePosition(Vector3[] positions, float divide = 0)
     {
         Vector3 pos = Vector3.zero;
 
-        float multiplier = 1 / (float)positions.Length;
+        if (divide == 0)
+            divide = positions.Length;
+
+        float multiplier = 1 / (float)divide;
 
         for(int i=0; i<positions.Length; i++)
         {

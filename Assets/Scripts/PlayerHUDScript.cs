@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 public class PlayerHUDScript : MonoBehaviour
 {
-    //COUNTDOWN VARIABLES
+    [Header("Countdown Variables")]
     public TrafficLightScript[] myLights;
     public Text countdownTxt;
 
@@ -12,8 +12,14 @@ public class PlayerHUDScript : MonoBehaviour
     int countdownNum = 3;
     Color startColor;
 
-	// Use this for initialization
-	void Start ()
+    [Header("Score Variables")]
+    public Text scoreTxt;
+
+    [Header("Timer Variables")]
+    public Text timeTxt;
+
+    // Use this for initialization
+    void Start ()
     {
         countdownTxt.text = "3";
         startColor = countdownTxt.color;
@@ -54,4 +60,15 @@ public class PlayerHUDScript : MonoBehaviour
             countdownTxt.color = Color.Lerp(countdownTxt.color, Color.clear, Time.deltaTime * 2);
         }
     }
+
+    public void DisplayScore(int score)
+    {
+        scoreTxt.text = "" + score;
+    }
+
+    public void DisplayTimer(int mins, int seconds)
+    {
+        timeTxt.text = "" + mins + ":" + seconds;
+    }
+
 }

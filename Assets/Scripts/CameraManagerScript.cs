@@ -109,16 +109,16 @@ public class CameraManagerScript : MonoBehaviour {
 
     IEnumerator Transition(ScreenSetup newSetup)
     {
-        float speed = 2;
+        float speed = 2.5f;
 
         transitionImg.fillAmount = 0;
         transitionImg.color = new Color(1, 1, 1, 0);
 
-        while(transitionImg.fillAmount<1)
+        while(transitionImg.fillAmount<1 || transitionImg.color.a<0.99f)
         {
             transitionImg.fillClockwise = true;
             transitionImg.fillAmount += Time.deltaTime * speed;
-            transitionImg.color = Color.Lerp(transitionImg.color, Color.white, speed * 1 * Time.deltaTime);
+            transitionImg.color = Color.Lerp(transitionImg.color, Color.white, speed * 3 * Time.deltaTime);
             yield return new WaitForEndOfFrame();
         }        
 
@@ -132,6 +132,11 @@ public class CameraManagerScript : MonoBehaviour {
         {
             playerCameras[i].gameObject.SetActive(true);
             playerCameras[i].SetupCamera(newSetup.camInfos[i]);
+        }
+
+        for(float delay = 1; delay>0; delay-=Time.deltaTime)
+        {
+            yield return new WaitForEndOfFrame();
         }
 
         while (transitionImg.fillAmount > 0)

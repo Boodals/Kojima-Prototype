@@ -105,6 +105,12 @@ public class CameraManagerScript : MonoBehaviour {
 
         transitionImg.fillAmount = 1;
         transitionImg.color = Color.white;
+
+        for(int i=0; i<4; i++)
+        {
+            MainHUDScript.singleton.playerHUDs[i].GetComponent<Canvas>().worldCamera = playerCameras[i].GetComponent<Camera>();
+            MainHUDScript.singleton.playerHUDs[i].GetComponent<Canvas>().planeDistance = 0.5f;
+        }
     }
 
     IEnumerator Transition(ScreenSetup newSetup)

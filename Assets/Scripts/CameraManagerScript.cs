@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using UnityEngine.UI;
 
 public class CameraManagerScript : MonoBehaviour {
 
@@ -28,6 +29,8 @@ public class CameraManagerScript : MonoBehaviour {
 
     public GameObject playerCameraPrefab;
     public PlayerCameraScript[] playerCameras;
+
+    public Image transitionImg;
 
     //QUICK SETUPS
     public void SetupOverhead()
@@ -79,17 +82,8 @@ public class CameraManagerScript : MonoBehaviour {
     //OTHER PUBLIC FUNCTIONS
     public void NewScreenSetup(ScreenSetup newSetup)
     {
-        //Disable all cameras 
-        for (int i = 0; i < playerCameras.Length; i++)
-        {
-            playerCameras[i].gameObject.SetActive(false);
-        }
-
-        for (int i = 0; i < newSetup.cameras; i++)
-        {
-            playerCameras[i].gameObject.SetActive(true);
-            playerCameras[i].SetupCamera(newSetup.camInfos[i]);
-        }
+        StopCoroutine("Transition");
+        StartCoroutine("Transition", newSetup);
     }
 
 
@@ -108,6 +102,45 @@ public class CameraManagerScript : MonoBehaviour {
         FollowPlayerThree = new bool[4] { false, false, true, false };
         FollowPlayerFour = new bool[4] { false, false, false, true };
         FollowAll = new bool[4] { true, true, true, true };
+
+        transitionImg.fillAmount = 1;
+        transitionImg.color = Color.white;
+    }
+
+    IEnumerator Transition(ScreenSetup newSetup)
+    {
+        float speed = 2;
+
+        transitionImg.fillAmount = 0;
+        transitionImg.color = new Color(1, 1, 1, 0);
+
+        while(transitionImg.fillAmount<1)
+        {
+            transitionImg.fillClockwise = true;
+            transitionImg.fillAmount += Time.deltaTime * speed;
+            transitionImg.color = Color.Lerp(transitionImg.color, Color.white, speed * 1 * Time.deltaTime);
+            yield return new WaitForEndOfFrame();
+        }        
+
+        //Disable all cameras 
+        for (int i = 0; i < playerCameras.Length; i++)
+        {
+            playerCameras[i].gameObject.SetActive(false);
+        }
+
+        for (int i = 0; i < newSetup.cameras; i++)
+        {
+            playerCameras[i].gameObject.SetActive(true);
+            playerCameras[i].SetupCamera(newSetup.camInfos[i]);
+        }
+
+        while (transitionImg.fillAmount > 0)
+        {
+            transitionImg.fillClockwise = false;
+            transitionImg.fillAmount -= Time.deltaTime * speed;
+
+            yield return new WaitForEndOfFrame();
+        }
     }
 	
 	// Update is called once per frame

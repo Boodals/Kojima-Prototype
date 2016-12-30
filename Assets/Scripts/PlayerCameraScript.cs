@@ -139,7 +139,7 @@ public class PlayerCameraScript : MonoBehaviour {
         if(Physics.Linecast(mainPlayer.transform.position + mainPlayer.transform.up, targetPos, out rH, LayerMask.GetMask("Default")))
         {
             //Debug.Log(rH.collider.gameObject.name);
-            targetPos = rH.point;
+            targetPos = rH.point + rH.normal;
         }
 
         transform.position = Vector3.Lerp(transform.position, targetPos + mainPlayer.GetVelocity() * Time.deltaTime, 8 * Time.deltaTime);

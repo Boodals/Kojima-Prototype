@@ -90,7 +90,7 @@ public class CarScript : MonoBehaviour
 
     void Start()
     {
-        ApplyCarInfo(new CarInfo(100, 9, 12, 0.65f, CarInfo.DriveMode.AllWheels));
+        ApplyCarInfo(new CarInfo(100, 9, 12, 0.35f, CarInfo.DriveMode.AllWheels));
         CreateSkidMarkTrails();
 
         skidSmoke.Stop();

@@ -43,6 +43,7 @@ public class CarScript : MonoBehaviour
 
     TrailRenderer[] skidMarkTrails;
     public GameObject skidMarkPrefab;
+    Vector3 skidDirection;
 
     Rigidbody rb;
 
@@ -61,6 +62,8 @@ public class CarScript : MonoBehaviour
     float targetAngularDrag = 5;
 
     public float cancelHoriForce = 20;
+
+    public ParticleSystem skidSmoke;
 
     // Use this for initialization
     void Awake()
@@ -89,6 +92,8 @@ public class CarScript : MonoBehaviour
     {
         ApplyCarInfo(new CarInfo(100, 9, 12, 0.65f, CarInfo.DriveMode.AllWheels));
         CreateSkidMarkTrails();
+
+        skidSmoke.Stop();
     }
 
     void CreateSkidMarkTrails()
@@ -162,15 +167,27 @@ public class CarScript : MonoBehaviour
             //Drifting
             drifting = Input.GetKey("joystick " + playerIndex + " button 1");
 
+            if(Input.GetKey("joystick " + playerIndex + " button 1"))
+            {
+                skidDirection = transform.forward;
+            }
+
             if (drifting)
             {
                 cancelHoriForce = 0;
 
+                if (!skidSmoke.isPlaying)
+                    skidSmoke.Play();
                 //if (skidMarkTrails.Length == 0)
-                    //CreateSkidMarkTrails();            
+                //CreateSkidMarkTrails();            
             }
             else
-                cancelHoriForce = Mathf.Lerp(cancelHoriForce, 3, 1 * Time.deltaTime);
+            {
+                if (skidSmoke.isPlaying)
+                    skidSmoke.Stop();
+
+                cancelHoriForce = Mathf.Lerp(cancelHoriForce, 3, 0.5f * Time.deltaTime);
+            }
 
             //Give each wheel a chance to push the car if grounded
             for (int i = 0; i < wheels.Length; i++)
@@ -215,7 +232,15 @@ public class CarScript : MonoBehaviour
                     if (forwardsMultiplier != 0)
                     {
                         //Debug.Log(forwardsMultiplier);
-                        Vector3 direction = Vector3.Cross(wheelRaycasts[i].normal, transform.forward);
+
+                        Vector3 wheelForward = transform.forward;
+
+                        if(drifting && i<2)
+                        {
+                            wheelForward = skidDirection;
+                        }
+
+                        Vector3 direction = Vector3.Cross(wheelRaycasts[i].normal, wheelForward);
                         direction = Vector3.Cross(direction, wheelRaycasts[i].normal);
 
                         Debug.DrawLine(wheels[i].transform.position, wheels[i].transform.position + direction * 5, Color.green);

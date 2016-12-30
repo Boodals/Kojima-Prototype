@@ -186,7 +186,7 @@ public class CarScript : MonoBehaviour
                 if (skidSmoke.isPlaying)
                     skidSmoke.Stop();
 
-                cancelHoriForce = Mathf.Lerp(cancelHoriForce, 3, 0.5f * Time.deltaTime);
+                cancelHoriForce = Mathf.Lerp(cancelHoriForce, 1, 0.5f * Time.deltaTime);
             }
 
             //Give each wheel a chance to push the car if grounded
@@ -212,7 +212,10 @@ public class CarScript : MonoBehaviour
                 }
 
                 if (!wheelIsGrounded[i])
+                {
                     thisWheelCanDrive = false;
+                    drifting = false;
+                }
 
                 if (wheelIsGrounded[i])
                 {

@@ -108,7 +108,7 @@ public class CameraManagerScript : MonoBehaviour {
 
         for(int i=0; i<4; i++)
         {
-            MainHUDScript.singleton.playerHUDs[i].GetComponent<Canvas>().worldCamera = playerCameras[i].GetComponent<Camera>();
+            MainHUDScript.singleton.playerHUDs[i].GetComponent<Canvas>().worldCamera = playerCameras[i].GetUICameraComponent();
             MainHUDScript.singleton.playerHUDs[i].GetComponent<Canvas>().planeDistance = 0.5f;
         }
     }

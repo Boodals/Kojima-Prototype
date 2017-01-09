@@ -16,7 +16,7 @@ public class PlayerCameraScript : MonoBehaviour {
     [System.Serializable]
     public enum ScreenPositions { TopLeft, TopRight, BottomLeft, BottomRight, TopHalf, BottomHalf, FullScreen }
 
-    Camera cam;
+    Camera cam, UICam;
 
     public enum ViewStyles { ThirdPerson, Overhead}
     public ViewStyles currentViewStyle = ViewStyles.ThirdPerson;
@@ -29,8 +29,14 @@ public class PlayerCameraScript : MonoBehaviour {
     float distanceFromPlayer = 7.5f;
 
 
+
+
    //Overhead
     public Vector3 curPos;
+
+    //Third person
+    [SerializeField]
+    float freeCamTimer = 0;
 
 
     float targetFOV = 65;
@@ -40,6 +46,7 @@ public class PlayerCameraScript : MonoBehaviour {
 
         followingThesePlayers = new bool[4];
         cam = GetComponent<Camera>();
+        UICam = transform.FindChild("UICamera").GetComponent<Camera>();
 	}
 
     void Start()
@@ -59,6 +66,11 @@ public class PlayerCameraScript : MonoBehaviour {
     public Camera GetCameraComponent()
     {
         return cam;
+    }
+
+    public Camera GetUICameraComponent()
+    {
+        return UICam;
     }
 
     public void SetupCamera(CameraInfo newInfo)
@@ -110,10 +122,28 @@ public class PlayerCameraScript : MonoBehaviour {
                 if(followingThesePlayers[i])
                 {
                     mainPlayer = GameController.singleton.players[i];
+                    StartCoroutine("ResetThirdPersonAngle");
                     i = 99;
                 }
             }
         }
+    }
+
+    IEnumerator ResetThirdPersonAngle()
+    {
+        float targetY = mainPlayer.transform.eulerAngles.y - 180;
+        float amount = Mathf.Abs(targetY - curPos.y);
+        float speed = 5;
+
+        for(float y = 0; y<amount-0.05f; y+=Time.deltaTime)
+        {
+            curPos.x = Mathf.Lerp(curPos.x, 0, speed * Time.deltaTime);
+            curPos.y = Mathf.Lerp(curPos.y, targetY, speed * Time.deltaTime);
+            y = Mathf.Lerp(y, amount, speed * Time.deltaTime);
+            yield return new WaitForEndOfFrame();
+        }
+
+        Debug.Log("DONE");
     }
 
     void ThirdPerson(Vector3 input)
@@ -123,8 +153,20 @@ public class PlayerCameraScript : MonoBehaviour {
 
         targetFOV = 60 + mainPlayer.currentWheelSpeed * 0.15f;
         curPos += input * turnSpeed * Time.deltaTime;
-
         curPos.x = Mathf.Clamp(curPos.x, 10, 60);
+
+        if (input.magnitude > 0.1f)
+            freeCamTimer = 4;
+
+        //Handles the "automatic" third person camera
+        //if (freeCamTimer <= 0)
+        //{
+        //    Vector3 targetCurPos = mainPlayer.transform.eulerAngles;
+        //    targetCurPos.y -= 180;
+        //    curPos.y = Mathf.Lerp(curPos.y, Quaternion.Euler(targetCurPos).eulerAngles.y, 1 * Time.deltaTime);
+        //}
+        //else
+        //    freeCamTimer -= Time.deltaTime;
 
         Vector3 backwards = new Vector3(0, 0, -(distanceFromPlayer));
         Quaternion rot = Quaternion.Euler(curPos);
@@ -134,12 +176,15 @@ public class PlayerCameraScript : MonoBehaviour {
         if(mainPlayer)
             targetPos = mainPlayer.transform.position + (rot * backwards);
 
+        if (Input.GetKeyDown("joystick " + mainPlayer.playerIndex + " button 9"))
+            StartCoroutine("ResetThirdPersonAngle");
+
         //Debug.DrawLine(mainPlayer.transform.position + Vector3.up, targetPos, Color.green);
         RaycastHit rH;
         if(Physics.Linecast(mainPlayer.transform.position + mainPlayer.transform.up, targetPos, out rH, LayerMask.GetMask("Default")))
         {
             //Debug.Log(rH.collider.gameObject.name);
-            targetPos = rH.point + rH.normal;
+            targetPos = rH.point + rH.normal*0.2f;
         }
 
         transform.position = Vector3.Lerp(transform.position, targetPos + mainPlayer.GetVelocity() * Time.deltaTime, 8 * Time.deltaTime);
@@ -225,7 +270,7 @@ public class PlayerCameraScript : MonoBehaviour {
         Vector3 input = Vector3.zero;
         
         if(mainPlayer)
-            input = new Vector3(Input.GetAxisRaw("Vertical2" + mainPlayer.playerInputTag), Input.GetAxisRaw("Horizontal2" + mainPlayer.playerInputTag), 0);
+            input = new Vector3(-Input.GetAxisRaw("Vertical2" + mainPlayer.playerInputTag), Input.GetAxisRaw("Horizontal2" + mainPlayer.playerInputTag), 0);
 
         switch(currentViewStyle)
         {
@@ -238,6 +283,7 @@ public class PlayerCameraScript : MonoBehaviour {
         }
 
         cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, targetFOV, 4 * Time.deltaTime);
+        UICam.fieldOfView = cam.fieldOfView;
     }
 
     public void MoveScreenToHere(Vector2 _newPos, Vector2 _size)
@@ -247,5 +293,6 @@ public class PlayerCameraScript : MonoBehaviour {
         newRect.size = _size;
 
         cam.rect = newRect;
+        UICam.rect = cam.rect;
     }
 }

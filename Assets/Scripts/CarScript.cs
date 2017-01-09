@@ -165,7 +165,7 @@ public class CarScript : MonoBehaviour
         if (playersCanMove && canIMove)
         {
             //Drifting
-            drifting = Input.GetKey("joystick " + playerIndex + " button 1");
+            drifting = Input.GetKey("joystick " + playerIndex + " button 1") && wheelIsGrounded[0] && wheelIsGrounded[1];
 
             if(Input.GetKey("joystick " + playerIndex + " button 1"))
             {

@@ -1,6 +1,12 @@
-﻿using UnityEngine;
+﻿//Author:       TMS
+//Description:  Script that controls how a car behaves. 
+//              Acts as a "Player Controller" for the car.
+//Last edit:    Yams @ 14/01/2017
+
+using UnityEngine;
 using System.Collections;
 
+[RequireComponent(typeof(CarResetter))]
 public class CarScript : MonoBehaviour
 {
     [System.Serializable]
@@ -33,6 +39,22 @@ public class CarScript : MonoBehaviour
     [Tooltip("BL, BR, FL, FR")]
     public Transform[] wheels;
     public bool[] wheelIsGrounded;
+
+    /// <summary>
+    /// Returns true if all the wheels are grounded
+    /// </summary>
+    public bool AllWheelsGrounded
+    {
+        //@Assumes 4 wheels, can be improved if other vehicles are required.
+        get { return (wheelIsGrounded[0] && wheelIsGrounded[1] && wheelIsGrounded[2] && wheelIsGrounded[3]); }
+    }
+
+    private bool inWater = false;
+    public bool InWater
+    {
+        get { return inWater; }
+    }
+
     RaycastHit[] wheelRaycasts;
     public float wheelTorque;
 
@@ -65,6 +87,9 @@ public class CarScript : MonoBehaviour
 
     public ParticleSystem skidSmoke;
 
+
+    private CarResetter mRef_CarResetter;
+
     // Use this for initialization
     void Awake()
     {
@@ -86,6 +111,9 @@ public class CarScript : MonoBehaviour
 
         GameController.currentPlayers++;
         GameController.singleton.players[playerIndex-1] = this;
+        
+        //Cache a reference to the CarRestter script
+        mRef_CarResetter = GetComponent<CarResetter>();
     }
 
     void Start()
@@ -154,9 +182,46 @@ public class CarScript : MonoBehaviour
         return rb.velocity;
     }
 
+    /// <summary>
+    /// Call to check whether the car is in water (expensive, so cache the result)
+    /// </summary>
+    /// <returns></returns>
+    private bool CheckInWater()
+    {
+        foreach (Transform wheel in wheels)
+        {
+            RaycastHit hit;
+            Ray ray = new Ray(wheel.position, Vector3.down);
+            if (Physics.Raycast(ray, out hit, myInfo.wheelSize))
+            {
+                if (hit.collider.gameObject.tag == "Water")
+                {
+                    return true;
+                }
+            }
+
+        }
+        return false;
+    }
+
     // Update is called once per frame
     void FixedUpdate()
     {
+        /*Check if the wheels are in water*/
+        inWater = CheckInWater();
+        if (inWater)
+        {
+            transform.position = mRef_CarResetter.GetLastSafePosition(); 
+            mRef_CarResetter.ResetRecord();
+            mRef_CarResetter.ForceRecord();
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            Vector3 euler = transform.eulerAngles;
+            euler.x = 0;
+            euler.z = 0;
+            transform.rotation = Quaternion.Euler(euler);
+        }
+
         float currentVelocity = rb.velocity.magnitude;
         currentWheelSpeed = currentVelocity * Vector3.Dot(rb.velocity.normalized, -transform.forward);
         ManageSkidMarkTrails();
@@ -355,6 +420,7 @@ public class CarScript : MonoBehaviour
         }
     }
 
+
     void OnCollisionEnter(Collision col)
     {
         carBody.transform.position += rb.velocity * 0.01f;
@@ -367,7 +433,22 @@ public class CarScript : MonoBehaviour
         {
             //Debug.Log(rb.velocity);
         }
+
+        //if (col.gameObject.tag == "Water")
+        //{
+        //    inWater = true;
+        //}
+       
     }
+
+    //void OnCollisionExit(Collision col)
+    //{
+
+    //    if (col.gameObject.tag == "Water")
+    //    {
+    //        inWater = false;
+    //    }
+    //}
 
     void RotateWheel(Transform wheel)
     {

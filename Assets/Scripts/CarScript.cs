@@ -28,7 +28,11 @@ public class CarScript : MonoBehaviour
     }
 
     public static bool playersCanMove = true;
-    public bool canIMove = true;
+    private bool canIMove = true;
+    public bool CanMove
+    {
+        get { return canIMove; }
+    }
 
     public int playerIndex = 1;
 
@@ -88,8 +92,8 @@ public class CarScript : MonoBehaviour
     public ParticleSystem skidSmoke;
 
 
-    private CarResetter mRef_CarResetter;
-
+    private CarResetter mRef_carResetter;
+    private CapsuleCollider mRef_collider;
     // Use this for initialization
     void Awake()
     {
@@ -113,7 +117,8 @@ public class CarScript : MonoBehaviour
         GameController.singleton.players[playerIndex-1] = this;
         
         //Cache a reference to the CarRestter script
-        mRef_CarResetter = GetComponent<CarResetter>();
+        mRef_carResetter = GetComponent<CarResetter>();
+        mRef_collider = GetComponent<CapsuleCollider>();
     }
 
     void Start()
@@ -182,16 +187,20 @@ public class CarScript : MonoBehaviour
         return rb.velocity;
     }
 
+
     /// <summary>
     /// Call to check whether the car is in water (expensive, so cache the result)
     /// </summary>
     /// <returns></returns>
     private bool CheckInWater()
     {
+        //Check below wheels
+        RaycastHit hit;
+        Ray ray = new Ray();
         foreach (Transform wheel in wheels)
         {
-            RaycastHit hit;
-            Ray ray = new Ray(wheel.position, Vector3.down);
+            ray.origin = wheel.position;
+            ray.direction = Vector3.down;
             if (Physics.Raycast(ray, out hit, myInfo.wheelSize))
             {
                 if (hit.collider.gameObject.tag == "Water")
@@ -199,7 +208,17 @@ public class CarScript : MonoBehaviour
                     return true;
                 }
             }
+        }
 
+        //Check above car
+        ray.origin = transform.position;
+        ray.direction = Vector3.up;
+        if (Physics.Raycast(ray, out hit, mRef_collider.radius, LayerMask.NameToLayer("Player")))
+        {
+            if (hit.collider.gameObject.tag == "Water")
+            {
+                return true;
+            }
         }
         return false;
     }
@@ -211,9 +230,9 @@ public class CarScript : MonoBehaviour
         inWater = CheckInWater();
         if (inWater)
         {
-            transform.position = mRef_CarResetter.GetLastSafePosition(); 
+            transform.position = mRef_carResetter.GetLastSafePosition(); 
             //mRef_CarResetter.ResetRecord();
-            mRef_CarResetter.ForceRecord();
+            mRef_carResetter.ForceRecord();
             rb.velocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
             Vector3 euler = transform.eulerAngles;
@@ -433,22 +452,7 @@ public class CarScript : MonoBehaviour
         {
             //Debug.Log(rb.velocity);
         }
-
-        //if (col.gameObject.tag == "Water")
-        //{
-        //    inWater = true;
-        //}
-       
     }
-
-    //void OnCollisionExit(Collision col)
-    //{
-
-    //    if (col.gameObject.tag == "Water")
-    //    {
-    //        inWater = false;
-    //    }
-    //}
 
     void RotateWheel(Transform wheel)
     {

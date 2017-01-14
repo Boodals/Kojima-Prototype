@@ -20,6 +20,7 @@ public class PlayerCameraScript : MonoBehaviour {
     [System.Serializable]
     public enum ScreenPositions { TopLeft, TopRight, BottomLeft, BottomRight, TopHalf, BottomHalf, FullScreen }
 
+    public Camera Cam{ get { return cam; } }
     Camera cam, UICam;
 
     public enum ViewStyles { ThirdPerson, Overhead}

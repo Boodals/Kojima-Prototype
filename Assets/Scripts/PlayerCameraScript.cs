@@ -1,4 +1,8 @@
-﻿using UnityEngine;
+﻿//Author:       TMS
+//Description:  Script that handles a player's camera.
+//Last Edit:    Yams @ 14/01/2017  
+
+using UnityEngine;
 using System.Collections;
 
 public class PlayerCameraScript : MonoBehaviour {
@@ -159,14 +163,16 @@ public class PlayerCameraScript : MonoBehaviour {
             freeCamTimer = 4;
 
         //Handles the "automatic" third person camera
-        //if (freeCamTimer <= 0)
-        //{
-        //    Vector3 targetCurPos = mainPlayer.transform.eulerAngles;
-        //    targetCurPos.y -= 180;
-        //    curPos.y = Mathf.Lerp(curPos.y, Quaternion.Euler(targetCurPos).eulerAngles.y, 1 * Time.deltaTime);
-        //}
-        //else
-        //    freeCamTimer -= Time.deltaTime;
+        if (freeCamTimer <= 0)
+        {
+            Vector3 targetCurPos = mainPlayer.transform.eulerAngles;
+            targetCurPos.y -= 180;
+            curPos.y = Mathf.LerpAngle(curPos.y, Quaternion.Euler(targetCurPos).eulerAngles.y, 1 * Time.deltaTime);
+        }
+        else
+            freeCamTimer -= Time.deltaTime;
+
+
 
         Vector3 backwards = new Vector3(0, 0, -(distanceFromPlayer));
         Quaternion rot = Quaternion.Euler(curPos);

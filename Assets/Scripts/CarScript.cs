@@ -212,7 +212,7 @@ public class CarScript : MonoBehaviour
         if (inWater)
         {
             transform.position = mRef_CarResetter.GetLastSafePosition(); 
-            mRef_CarResetter.ResetRecord();
+            //mRef_CarResetter.ResetRecord();
             mRef_CarResetter.ForceRecord();
             rb.velocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;

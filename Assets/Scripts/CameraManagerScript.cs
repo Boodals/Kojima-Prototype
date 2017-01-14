@@ -82,6 +82,7 @@ public class CameraManagerScript : MonoBehaviour {
     //OTHER PUBLIC FUNCTIONS
     public void NewScreenSetup(ScreenSetup newSetup)
     {
+        Debug.Log("Call");
         StopCoroutine("Transition");
         StartCoroutine("Transition", newSetup);
     }
@@ -95,7 +96,7 @@ public class CameraManagerScript : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
         playerCameras = CreateCameras(GameController.currentPlayers);
-        SetupThirdPersonForAllPlayers();
+        //SetupThirdPersonForAllPlayers();
 
         FollowPlayerOne = new bool[4] { true, false, false, false };
         FollowPlayerTwo = new bool[4] { false, true, false, false };

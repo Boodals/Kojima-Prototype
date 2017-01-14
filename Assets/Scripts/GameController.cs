@@ -12,10 +12,14 @@ public class GameController : MonoBehaviour {
 	void Awake () {
         singleton = this;
         players = new CarScript[4];
+        
 	}
-	
-	// Update is called once per frame
-	void Update () {
+    private void Start()
+    {
+        CameraManagerScript.singleton.SetupThirdPersonForAllPlayers();
+    }
+    // Update is called once per frame
+    void Update () {
 
         if (Input.GetKeyDown(KeyCode.Alpha4))
             CameraManagerScript.singleton.SetupOverhead();

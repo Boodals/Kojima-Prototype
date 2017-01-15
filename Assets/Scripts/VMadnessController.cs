@@ -4,7 +4,7 @@
 
 using UnityEngine;
 using System.Collections;
-
+using UnityEngine.SceneManagement;
 public class VMadnessController : MonoBehaviour
 {
     public enum STATE
@@ -19,7 +19,10 @@ public class VMadnessController : MonoBehaviour
     private STATE                       m_state, m_prevState;
     public Camera                       m_introCamera;
     public Animator                     m_introCameraAnimator;
-
+    /// <summary>
+    /// Time left before game is over
+    /// </summary>
+    public float TimeLeft { get { return m_maxTime- m_gameTimer.Elapsed();  } }
     public int                          JumpCar { get; set; }
     public static VMadnessController    Singleton { get { return m_singleton; } }
     private static VMadnessController   m_singleton;
@@ -36,11 +39,13 @@ public class VMadnessController : MonoBehaviour
     public void JumpComplete(int score)
     {
         m_score = score;
+        m_state = STATE.GAME_OVER;
     }
 
     public void JumpStart()
     {
         m_gameTimer.Pause();
+        //@Make timer flash / make it obvious left over time -> points
     }
 
     public void GameStart()
@@ -72,6 +77,11 @@ public class VMadnessController : MonoBehaviour
         //foreach (var hud in MainHUDScript.singleton.playerHUDs) hud.gameObject.SetActive(false);
         ///*Cause transition*/
         CameraManagerScript.singleton.SetupThirdPersonForAllPlayers();
+
+        /*Display correct time*/
+        int minutes = Mathf.FloorToInt(MaxGameTime / 60);
+        int seconds = Mathf.FloorToInt(MaxGameTime % 60);
+        MainHUDScript.singleton.UpdateTimer(minutes, seconds);
 
         /*Start all cars as stationary*/
         GameController.singleton.AllCarsCanMove(false);
@@ -128,7 +138,7 @@ public class VMadnessController : MonoBehaviour
 
     private void CountdownTransition()
     {
-        CameraManagerScript.singleton.SetupThirdPersonForAllPlayers();
+        //CameraManagerScript.singleton.SetupThirdPersonForAllPlayers();
         foreach (var hud in MainHUDScript.singleton.playerHUDs) hud.gameObject.SetActive(true);
         m_gameTimer.Restart();
     }
@@ -150,26 +160,26 @@ public class VMadnessController : MonoBehaviour
     {
         if (m_gameTimer.Elapsed() >= MaxGameTime)
         {
-            MainHUDScript.singleton.UpdateTimer(0, 0);
-            m_state = STATE.GAME_OVER;
             JumpComplete(0);
         }
         else
         {
-            int minutes = Mathf.RoundToInt((MaxGameTime - m_gameTimer.Elapsed()) / 60);
-            int seconds = Mathf.RoundToInt((MaxGameTime - m_gameTimer.Elapsed()) % 60);
+            int minutes = Mathf.FloorToInt((MaxGameTime - m_gameTimer.Elapsed()) / 60);
+            int seconds = Mathf.FloorToInt((MaxGameTime - m_gameTimer.Elapsed()) % 60);
             MainHUDScript.singleton.UpdateTimer(minutes, seconds);
         }
     }
 
     private void GameOverTransition()
     {
+        MainHUDScript.singleton.UpdateTimer(0, 0);
         GameController.singleton.AllCarsCanMove(false);
     }
 
     private void GameOverUpdate()
     {
         //Display score to cars && give option to quit / continue
+        if (Input.anyKeyDown) SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
  
 }

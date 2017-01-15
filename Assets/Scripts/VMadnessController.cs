@@ -15,18 +15,23 @@ public class VMadnessController : MonoBehaviour
         PLAY,
         GAME_OVER
     }
-    private STATE m_state, m_prevState;
-    
+
+    private STATE                       m_state, m_prevState;
+    public Camera                       m_introCamera;
+    public Animator                     m_introCameraAnimator;
+
     public int                          JumpCar { get; set; }
     public static VMadnessController    Singleton { get { return m_singleton; } }
     private static VMadnessController   m_singleton;
-    private Timer m_gameTimer;
+    private Timer                       m_gameTimer;
     [SerializeField]
-    private float m_maxTime;
-    public float MaxGameTime { get { return m_maxTime; } }
+    private float                       m_maxTime;
+    public float                        MaxGameTime { get { return m_maxTime; } }
 
-    private bool m_gameOver;
-    private int m_score = 0;
+    private bool                        m_gameOver;
+    private int                         m_score = 0;
+
+
 
     public void JumpComplete(int score)
     {
@@ -62,6 +67,11 @@ public class VMadnessController : MonoBehaviour
 
         m_state = STATE.INTRO;
         m_prevState = STATE.NO_STATE;
+
+        ///*Hide the player HUDS*/
+        //foreach (var hud in MainHUDScript.singleton.playerHUDs) hud.gameObject.SetActive(false);
+        ///*Cause transition*/
+        CameraManagerScript.singleton.SetupThirdPersonForAllPlayers();
 
         /*Start all cars as stationary*/
         GameController.singleton.AllCarsCanMove(false);
@@ -100,16 +110,26 @@ public class VMadnessController : MonoBehaviour
     {
         //@Intro init stuff here.
         //@skip this state for now
+        //m_introCameraAnimator.SetTrigger("START");
         m_state = STATE.COUNTDOWN;
     }
     private void IntroUpdate()
     {
         //@Add intro update stuff here!
         //m_state = STATE.COUNTDOWN when you're done with intro.
+        //AnimatorStateInfo stateInfo= m_introCameraAnimator.GetCurrentAnimatorStateInfo(0);
+       //if (stateInfo.IsName("End"))
+       // {
+         //   m_introCamera.gameObject.SetActive(false);
+        //    m_state = STATE.COUNTDOWN;
+         //   Debug.Log("blep");
+       // }
     }
 
     private void CountdownTransition()
     {
+        CameraManagerScript.singleton.SetupThirdPersonForAllPlayers();
+        foreach (var hud in MainHUDScript.singleton.playerHUDs) hud.gameObject.SetActive(true);
         m_gameTimer.Restart();
     }
     private void CountdownUpdate()

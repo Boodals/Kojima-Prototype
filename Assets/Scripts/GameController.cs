@@ -16,7 +16,7 @@ public class GameController : MonoBehaviour {
 	}
     private void Start()
     {
-        CameraManagerScript.singleton.SetupThirdPersonForAllPlayers();
+        //CameraManagerScript.singleton.SetupThirdPersonForAllPlayers();
     }
     // Update is called once per frame
     void Update () {

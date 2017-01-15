@@ -16,7 +16,7 @@ public class GameController : MonoBehaviour {
 	}
     private void Start()
     {
-        CameraManagerScript.singleton.SetupThirdPersonForAllPlayers();
+        //CameraManagerScript.singleton.SetupThirdPersonForAllPlayers();
     }
     // Update is called once per frame
     void Update () {
@@ -45,4 +45,12 @@ public class GameController : MonoBehaviour {
             CameraManagerScript.singleton.NewScreenSetup(newScreenSetup);
         }
 	}
+
+    public void AllCarsCanMove(bool _b)
+    {
+        foreach (var car in players)
+        {
+            car.CanMove = _b;
+        }
+    }
 }

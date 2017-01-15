@@ -45,4 +45,12 @@ public class GameController : MonoBehaviour {
             CameraManagerScript.singleton.NewScreenSetup(newScreenSetup);
         }
 	}
+
+    public void AllCarsCanMove(bool _b)
+    {
+        foreach (var car in players)
+        {
+            car.CanMove = _b;
+        }
+    }
 }

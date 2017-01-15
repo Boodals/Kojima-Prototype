@@ -5,6 +5,7 @@
 
 using UnityEngine;
 using System.Collections;
+using System;
 
 [RequireComponent(typeof(CarResetter))]
 public class CarScript : MonoBehaviour

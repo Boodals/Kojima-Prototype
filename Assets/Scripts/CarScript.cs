@@ -32,6 +32,7 @@ public class CarScript : MonoBehaviour
     public bool CanMove
     {
         get { return canIMove; }
+        set { canIMove = value; }
     }
 
     public int playerIndex = 1;

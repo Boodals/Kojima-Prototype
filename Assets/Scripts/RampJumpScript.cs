@@ -9,6 +9,7 @@ using UnityEngine.UI;
 public class RampJumpScript : MonoBehaviour
 {   
     public float            HangTime { get { return m_hangTime.Elapsed(); } }
+    public int              Score { get { return Mathf.RoundToInt(HangTime * 100);  } }
     public PlayerHUDScript    mRef_playerHUD;
 
     private CarScript   mRef_carScript;
@@ -31,15 +32,16 @@ public class RampJumpScript : MonoBehaviour
 	// Update is called once per frame
 	void Update ()
     {
-        mRef_playerHUD.DisplayScore(Mathf.RoundToInt(HangTime * 100));
+        mRef_playerHUD.DisplayScore(Score);
     }
 
-    private void OnTriggerEnter(Collider other)
+    private void OnTriggerExit(Collider other)
     {
         if (other.gameObject.tag == "Ramp")
         {
             m_flying = true;
             m_hangTime.Restart();
+            VMadnessController.Singleton.JumpStart();
         }
     }
     private void OnTriggerStay(Collider other)
@@ -48,6 +50,7 @@ public class RampJumpScript : MonoBehaviour
         {
             m_flying = false;
             m_hangTime.Pause();
+            VMadnessController.Singleton.JumpComplete(Score);
         }
     }
  

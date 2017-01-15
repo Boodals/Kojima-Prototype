@@ -148,7 +148,7 @@ public class PlayerCameraScript : MonoBehaviour {
             yield return new WaitForEndOfFrame();
         }
 
-        Debug.Log("DONE");
+        //Debug.Log("DONE");
     }
 
     void ThirdPerson(Vector3 input)

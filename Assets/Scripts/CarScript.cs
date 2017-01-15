@@ -94,6 +94,7 @@ public class CarScript : MonoBehaviour
 
     private CarResetter mRef_carResetter;
     private CapsuleCollider mRef_collider;
+    public CapsuleCollider CarCollider { get { return mRef_collider;  } }
     // Use this for initialization
     void Awake()
     {
@@ -188,49 +189,52 @@ public class CarScript : MonoBehaviour
     }
 
 
-    /// <summary>
-    /// Call to check whether the car is in water (expensive, so cache the result)
-    /// </summary>
-    /// <returns></returns>
-    private bool CheckInWater()
-    {
-        //Check below wheels
-        RaycastHit hit;
-        Ray ray = new Ray();
-        foreach (Transform wheel in wheels)
-        {
-            ray.origin = wheel.position;
-            ray.direction = Vector3.down;
-            if (Physics.Raycast(ray, out hit, myInfo.wheelSize))
-            {
-                if (hit.collider.gameObject.tag == "Water")
-                {
-                    return true;
-                }
-            }
-        }
+    ///// <summary>
+    ///// Call to check whether the car is in water (expensive, so cache the result)
+    ///// @Could be improved as right now it only checks below wheels (always DOWN)
+    ///// and above the car on global axis (UP). Using a trigger collider to check this
+    ///// would be easier!
+    ///// </summary>
+    ///// <returns></returns>
+    //private bool CheckInWater()
+    //{
+    //    //Check below wheels
+    //    RaycastHit hit;
+    //    Ray ray = new Ray();
+    //    foreach (Transform wheel in wheels)
+    //    {
+    //        ray.origin = wheel.position;
+    //        ray.direction = Vector3.down;
+    //        if (Physics.Raycast(ray, out hit, myInfo.wheelSize))
+    //        {
+    //            if (hit.collider.gameObject.tag == "Water")
+    //            {
+    //                return true;
+    //            }
+    //        }
+    //    }
 
-        //Check above car
-        ray.origin = transform.position;
-        ray.direction = Vector3.up;
-        if (Physics.Raycast(ray, out hit, mRef_collider.radius, LayerMask.NameToLayer("Player")))
-        {
-            if (hit.collider.gameObject.tag == "Water")
-            {
-                return true;
-            }
-        }
-        return false;
-    }
+    //    //Check above car - probably won't ever happen...
+    //    ray.origin = transform.position;
+    //    ray.direction = Vector3.up;
+    //    if (Physics.Raycast(ray, out hit, mRef_collider.radius, LayerMask.NameToLayer("Player")))
+    //    {
+    //        if (hit.collider.gameObject.tag == "Water")
+    //        {
+    //            return true;
+    //        }
+    //    }
+    //    return false;
+    //}
 
-    // Update is called once per frame
-    void FixedUpdate()
+
+    private void OnTriggerEnter(Collider other)
     {
-        /*Check if the wheels are in water*/
-        inWater = CheckInWater();
-        if (inWater)
+        if (other.gameObject.tag == "Water")
         {
-            transform.position = mRef_carResetter.GetLastSafePosition(); 
+            inWater = true;
+
+            transform.position = mRef_carResetter.GetLastSafePosition();
             //mRef_CarResetter.ResetRecord();
             mRef_carResetter.ForceRecord();
             rb.velocity = Vector3.zero;
@@ -240,6 +244,17 @@ public class CarScript : MonoBehaviour
             euler.z = 0;
             transform.rotation = Quaternion.Euler(euler);
         }
+    }
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.gameObject.tag == "Water")
+        {
+            inWater = false;
+        }
+    }
+    // Update is called once per frame
+    void FixedUpdate()
+    {
 
         float currentVelocity = rb.velocity.magnitude;
         currentWheelSpeed = currentVelocity * Vector3.Dot(rb.velocity.normalized, -transform.forward);

@@ -81,8 +81,7 @@ public class CameraManagerScript : MonoBehaviour {
 
     //OTHER PUBLIC FUNCTIONS
     public void NewScreenSetup(ScreenSetup newSetup)
-    {
-        Debug.Log("Call");
+    { 
         StopCoroutine("Transition");
         StartCoroutine("Transition", newSetup);
     }

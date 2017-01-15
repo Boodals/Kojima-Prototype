@@ -1,4 +1,8 @@
-﻿using UnityEngine;
+﻿//Author:       Yams
+//Description:  Script to help set up a game of Sabotage.
+//Last Edit:    Yams @ 15/01/2017
+
+using UnityEngine;
 using System.Collections;
 using System;
 

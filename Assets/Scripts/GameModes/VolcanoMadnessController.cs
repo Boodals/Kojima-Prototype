@@ -7,17 +7,17 @@ public class VolcanoMadnessController : GameModeBase {
     public Transform attackerSpawnPos;
     public Transform defenderPositions;
 
-    protected override void GameStart()
+    public override void GameStart()
     {
         //throw new NotImplementedException();
     }
 
-    protected override void GameModeLoaded()
+	public override void GameModeLoaded()
     {
         //throw new NotImplementedException();
     }
 
-    protected override void Start()
+	public override void Start()
     {
         //throw new NotImplementedException();
     }

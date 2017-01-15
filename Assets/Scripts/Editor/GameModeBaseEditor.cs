@@ -7,16 +7,118 @@ using System.Linq;
 [CustomEditor(typeof(GameModeBase), true)]
 public class GameModeBaseEditor : Editor
 {
+	private static bool teamFoldout;
+	private static bool[] teamFoldouts = new bool[GameModeMgr.maxNumTeams];
 
-	private const string gameModeFolder = "Assets/GameModes";
-	
+
+
+
 	public override void OnInspectorGUI()
 	{
 		//serializedObject.FindProperty("numTeams").intValue
 
+		SerializedProperty teamDis = serializedObject.FindProperty("teamDistribution");
+
+		if(teamFoldout = EditorGUILayout.Foldout(teamFoldout, "Teams"))
+		{
+			EditorGUI.indentLevel++;
+
+			int newSize = EditorGUILayout.IntSlider("Number of teams", teamDis.arraySize, GameModeMgr.minNumTeams, GameModeMgr.maxNumTeams);
+
+			if(newSize > teamDis.arraySize)
+			{
+				//Were adding atleast one new team
+
+				int i = teamDis.arraySize;
+				teamDis.arraySize = newSize; //Expand the array
+				for(; i < newSize; i++)
+				{
+					//This is a new team
+					SerializedProperty team = teamDis.GetArrayElementAtIndex(i);
+
+					team.FindPropertyRelative("name").stringValue = "Team " + (i + 1);
+				}
+			}
+			else
+			{
+				teamDis.arraySize = newSize;
+			}
+
+
+			//Make sure the team counts add up
+			int[] assignedPlayers = new int[GameModeMgr.maxNumPlayers - GameModeMgr.minNumPlayers + 1];
+
+			for(int i = 0; i < teamDis.arraySize; i++)
+			{
+				SerializedProperty team = teamDis.GetArrayElementAtIndex(i);
+
+				//Make sure it has the rignt number of elements
+				team.FindPropertyRelative("numPlayersPerCount").arraySize = GameModeMgr.maxNumPlayers - GameModeMgr.minNumPlayers + 1;
+
+				for(int j = 0; j <= GameModeMgr.maxNumPlayers - GameModeMgr.minNumPlayers; j++)
+				{
+					SerializedProperty numPlayers = team.FindPropertyRelative("numPlayersPerCount").GetArrayElementAtIndex(j);
+
+					assignedPlayers[j] += numPlayers.intValue;
+				}
+			}
+
+
+			for(int i = 0; i < teamDis.arraySize; i++)
+			{
+				SerializedProperty team = teamDis.GetArrayElementAtIndex(i);
+				
+				DrawTeam(team, i, assignedPlayers);
+			}
+
+			EditorGUI.indentLevel--;
+		}
+
+		serializedObject.ApplyModifiedProperties();
 
 
 		DrawDefaultInspector();
+	}
+
+	private static void DrawTeam(SerializedProperty team, int id, int[] assignedPlayers)
+	{
+		string readableName = team.FindPropertyRelative("name").stringValue;
+		if(readableName == "")
+		{
+			readableName = "Team " + (id + 1);
+		}
+		if(teamFoldouts[id] = EditorGUILayout.Foldout(teamFoldouts[id], readableName))
+		{
+			EditorGUI.indentLevel++;
+
+			EditorGUILayout.PropertyField(team.FindPropertyRelative("name"));
+
+			EditorGUILayout.LabelField("Players on team per total player count:");
+			EditorGUI.indentLevel++;
+
+			for(int i = 0; i <= GameModeMgr.maxNumPlayers - GameModeMgr.minNumPlayers; i++)
+			{
+				SerializedProperty numPlayers = team.FindPropertyRelative("numPlayersPerCount").GetArrayElementAtIndex(i);
+
+				int playerCount = i + GameModeMgr.minNumPlayers;
+
+				Color prevColor = GUI.color;
+
+				//If the number of players doesnt add up
+				if(playerCount != assignedPlayers[i])
+				{
+					//Highlight it in red so you can see easily
+					GUI.color = Color.red;
+				}
+
+				numPlayers.intValue = EditorGUILayout.IntSlider(playerCount + " Players", numPlayers.intValue, 0, playerCount);
+
+				GUI.color = prevColor;
+			}
+
+			EditorGUI.indentLevel--;
+			EditorGUI.indentLevel--;
+		}
 	}
 
 	[UnityEditor.Callbacks.DidReloadScripts]
@@ -26,11 +128,11 @@ public class GameModeBaseEditor : Editor
 
 
 		//Make sure the GameModes folder exists
-		CreateFolder(gameModeFolder);
+		CreateFolder(GameModeMgrEditor.gameModeFolder);
 
 
 		//Find the GUID of all assets in the gameModeFolder
-		string[] allGameModesGUIDs = AssetDatabase.FindAssets("", new string[] { gameModeFolder });
+		string[] allGameModesGUIDs = AssetDatabase.FindAssets("", new string[] { GameModeMgrEditor.gameModeFolder });
 
 		GameModeBase[] allGameModes = new GameModeBase[allGameModesGUIDs.Length];
 
@@ -70,7 +172,7 @@ public class GameModeBaseEditor : Editor
 			}
 			else
 			{
-				Debug.Log("Discovered new GameMode class '" + type.Name + "'. Creating a settings asset in " + gameModeFolder);
+				Debug.Log("Discovered new GameMode class '" + type.Name + "'. Creating a settings asset in " + GameModeMgrEditor.gameModeFolder);
 
 				CreateGameModeAsset(type);
 			}
@@ -85,7 +187,7 @@ public class GameModeBaseEditor : Editor
 		GameModeBase gameMode = CreateInstance(type) as GameModeBase;
 
 		//Save the object as an asset
-		string path = gameModeFolder + "/" + type.Name + ".asset";
+		string path = GameModeMgrEditor.gameModeFolder + "/" + type.Name + ".asset";
 		AssetDatabase.CreateAsset(gameMode, path);
 
 		//Save changes to assets

@@ -484,7 +484,7 @@ public class CarScript : MonoBehaviour
         {
             flipTimer += Time.deltaTime;
 
-            if(flipTimer>3)
+            if (flipTimer > 3)
                 StartCoroutine("RollBackOver");
         }
         else
@@ -499,7 +499,7 @@ public class CarScript : MonoBehaviour
         carBody.transform.position += rb.velocity * 0.01f;
         float intensity = col.impactForceSum.magnitude;
 
-        Debug.Log(intensity);
+        //Debug.Log(intensity);
 
         if (transform.InverseTransformDirection(col.contacts[0].normal).y>0.6f)
         {

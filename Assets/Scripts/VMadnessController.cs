@@ -5,6 +5,8 @@
 using UnityEngine;
 using System.Collections;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+
 public class VMadnessController : MonoBehaviour
 {
     public enum STATE
@@ -19,6 +21,7 @@ public class VMadnessController : MonoBehaviour
     private STATE                       m_state, m_prevState;
     public Camera                       m_introCamera;
     public Animator                     m_introCameraAnimator;
+
     /// <summary>
     /// Time left before game is over
     /// </summary>
@@ -68,15 +71,16 @@ public class VMadnessController : MonoBehaviour
     {
         RampJumpScript ref_jumpScript = GameController.singleton.players[JumpCar].gameObject.AddComponent<RampJumpScript>();
         ref_jumpScript.mRef_playerHUD = MainHUDScript.singleton.playerHUDs[JumpCar];
-
-
-        m_state = STATE.INTRO;
+        
+        m_state     = STATE.INTRO;
         m_prevState = STATE.NO_STATE;
 
         ///*Hide the player HUDS*/
-        //foreach (var hud in MainHUDScript.singleton.playerHUDs) hud.gameObject.SetActive(false);
-        ///*Cause transition*/
-        CameraManagerScript.singleton.SetupThirdPersonForAllPlayers();
+        foreach (var hud in MainHUDScript.singleton.playerHUDs) hud.gameObject.SetActive(false);
+        CameraManagerScript.singleton.gameObject.SetActive(false);
+
+        //CameraManagerScript.ScreenSetup introSetup = new CameraManagerScript.ScreenSetup(1);
+        //CameraManagerScript.singleton.NewScreenSetup(introSetup);
 
         /*Display correct time*/
         int minutes = Mathf.FloorToInt(MaxGameTime / 60);
@@ -120,28 +124,38 @@ public class VMadnessController : MonoBehaviour
     {
         //@Intro init stuff here.
         //@skip this state for now
-        //m_introCameraAnimator.SetTrigger("START");
-        m_state = STATE.COUNTDOWN;
+        m_introCameraAnimator.SetTrigger("START");
+        m_introCameraAnimator.SetFloat("SPEED", 0.5f);
+        //m_state = STATE.COUNTDOWN;
     }
+
     private void IntroUpdate()
     {
         //@Add intro update stuff here!
         //m_state = STATE.COUNTDOWN when you're done with intro.
-        //AnimatorStateInfo stateInfo= m_introCameraAnimator.GetCurrentAnimatorStateInfo(0);
-       //if (stateInfo.IsName("End"))
-       // {
-         //   m_introCamera.gameObject.SetActive(false);
-        //    m_state = STATE.COUNTDOWN;
-         //   Debug.Log("blep");
-       // }
+        AnimatorStateInfo stateInfo = m_introCameraAnimator.GetCurrentAnimatorStateInfo(0);
+        if (stateInfo.IsName("End"))
+        {
+            m_state = STATE.COUNTDOWN;
+        }
     }
 
     private void CountdownTransition()
     {
-        //CameraManagerScript.singleton.SetupThirdPersonForAllPlayers();
-        foreach (var hud in MainHUDScript.singleton.playerHUDs) hud.gameObject.SetActive(true);
+        m_introCamera.enabled = false;
+        m_introCamera.gameObject.SetActive(false);
+        CameraManagerScript.singleton.gameObject.SetActive(true);
+        CameraManagerScript.singleton.SetupThirdPersonForAllPlayers();
+        StartCoroutine(ShowHUD());
         m_gameTimer.Restart();
     }
+
+    IEnumerator ShowHUD()
+    {
+        yield return new WaitForSeconds(2.0f);
+        foreach (var hud in MainHUDScript.singleton.playerHUDs) hud.gameObject.SetActive(true);
+    }
+
     private void CountdownUpdate()
     {
         if (m_gameTimer.Elapsed() >= 6.0f)

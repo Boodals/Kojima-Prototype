@@ -7,8 +7,8 @@ public class TrapSpawner : MonoBehaviour {
     public bool spawnTraps;
     public float spawnInterval;
     public float currentTimer = 0.0f;    
-    public GameObject spawnObject;
-    public Text nextTrap;
+    public Vector3 spawnPosition;
+    //public Text nextTrap;
 
     int randomArrayIndex;
 
@@ -21,9 +21,11 @@ public class TrapSpawner : MonoBehaviour {
         {
             traps = Resources.LoadAll("Traps");
             randomArrayIndex = Random.Range(0, traps.Length);
-            nextTrap.text = traps[randomArrayIndex].name;
+            //nextTrap.text = traps[randomArrayIndex].name;
         }
     }
+    
+
 	
 	// Update is called once per frame
 	void Update () {
@@ -35,9 +37,9 @@ public class TrapSpawner : MonoBehaviour {
             {
                 currentTimer = 0.0f;
                 //trapRotation = new Quaternion(Quaternion.identity.x, Quaternion.identity.y, gameObject.transform.rotation.z, gameObject.transform.rotation.w);
-                Instantiate(traps[randomArrayIndex], spawnObject.transform.position, Quaternion.identity);
+                Instantiate(traps[randomArrayIndex], transform.position - -transform.forward * 6 + transform.up, Quaternion.LookRotation(transform.up, transform.forward));
                 randomArrayIndex = Random.Range(0, traps.Length);
-                nextTrap.text = traps[randomArrayIndex].name;
+                //nextTrap.text = traps[randomArrayIndex].name;
             }
         }
 	}

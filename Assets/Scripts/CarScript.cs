@@ -1,7 +1,7 @@
 ﻿//Author:       TMS
 //Description:  Script that controls how a car behaves. 
 //              Acts as a "Player Controller" for the car.
-//Last edit:    Yams @ 14/01/2017
+//Last edit:    TMS @ 16/01/2017
 
 using UnityEngine;
 using System.Collections;
@@ -17,14 +17,21 @@ public class CarScript : MonoBehaviour
         public DriveMode myDriveMode;
 
         public float health, acceleration, turnSpeed, wheelSize;
+        public AudioClip engineAudioClip, accelerationAudioClip;
 
-        public CarInfo(float _health, float _acceleration, float _turnSpeed, float _wheelSize, DriveMode _driveMode)
+        public CarInfo(float _health, float _acceleration, float _turnSpeed, float _wheelSize, DriveMode _driveMode, string engineSoundFilename = "Engine1", string accelerationSoundFileName = "Acceleration1")
         {
             myDriveMode = _driveMode;
             health = _health;
             acceleration = _acceleration;
             turnSpeed = _turnSpeed;
             wheelSize = _wheelSize;
+
+            engineAudioClip = Resources.Load<AudioClip>("Sounds/Engines/" + engineSoundFilename);
+            Debug.Log("Sounds/Engines/" + engineSoundFilename);
+
+            accelerationAudioClip = Resources.Load<AudioClip>("Sounds/Acceleration/" + accelerationSoundFileName);
+            Debug.Log("Sounds/Acceleration/" + accelerationSoundFileName);
         }
     }
 
@@ -93,10 +100,14 @@ public class CarScript : MonoBehaviour
 
     public ParticleSystem skidSmoke;
 
+    //Audio
+    AudioSource engine, acceleration, otherSounds;
+    public AudioClip smallImpact, mediumImpact;
 
     private CarResetter mRef_carResetter;
     private CapsuleCollider mRef_collider;
     public CapsuleCollider CarCollider { get { return mRef_collider;  } }
+
     // Use this for initialization
     void Awake()
     {
@@ -122,11 +133,24 @@ public class CarScript : MonoBehaviour
         //Cache a reference to the CarRestter script
         mRef_carResetter = GetComponent<CarResetter>();
         mRef_collider = GetComponent<CapsuleCollider>();
+
+        //Create audio sources
+        engine = gameObject.AddComponent<AudioSource>();
+        engine.spatialBlend = 0;
+        engine.loop = true;
+        engine.volume = 0.25f;
+
+        acceleration = gameObject.AddComponent<AudioSource>();
+        acceleration.spatialBlend = 0;
+        acceleration.loop = true;
+
+        otherSounds = gameObject.AddComponent<AudioSource>();
+        otherSounds.spatialBlend = 0;
     }
 
     void Start()
     {
-        ApplyCarInfo(new CarInfo(100, 9, 12, 0.35f, CarInfo.DriveMode.AllWheels));
+        ApplyCarInfo(new CarInfo(100, 9, 12, 0.35f, CarInfo.DriveMode.AllWheels, "Engine1"));
         CreateSkidMarkTrails();
 
         skidSmoke.Stop();
@@ -183,6 +207,12 @@ public class CarScript : MonoBehaviour
     public void ApplyCarInfo(CarInfo newInfo)
     {
         myInfo = newInfo;
+
+        engine.clip = myInfo.engineAudioClip;
+        engine.Play();
+
+        acceleration.clip = myInfo.accelerationAudioClip;
+        acceleration.Stop();
     }
 
     public Vector3 GetVelocity()
@@ -263,6 +293,8 @@ public class CarScript : MonoBehaviour
         ManageSkidMarkTrails();
         rb.angularDrag = 0;
 
+        float targetAccelerationSoundIntensity = 0;
+
         if (playersCanMove && canIMove)
         {
             //Drifting
@@ -320,23 +352,22 @@ public class CarScript : MonoBehaviour
 
                 if (wheelIsGrounded[i])
                 {
-                   
-                    {
-                        PreventSkidding();
-                    }
+                    PreventSkidding();
                 }
+
+                float forwardsMultiplier = Input.GetAxisRaw("Acceleration" + playerInputTag) + (-Input.GetAxisRaw("Brake" + playerInputTag));
+                //Audio
+                targetAccelerationSoundIntensity = -forwardsMultiplier;
 
                 if (thisWheelCanDrive)
                 {
                     if ((drifting && i > 1) || !drifting)
                         rb.angularDrag += targetAngularDrag/4;
 
-                    float forwardsMultiplier = Input.GetAxisRaw("Acceleration" + playerInputTag) + (-Input.GetAxisRaw("Brake" + playerInputTag));
+                    engine.pitch = Mathf.Lerp(engine.pitch, 0.95f - (forwardsMultiplier * 0.8f), 1 * Time.deltaTime);
 
                     if (forwardsMultiplier != 0)
                     {
-                        //Debug.Log(forwardsMultiplier);
-
                         Vector3 wheelForward = transform.forward;
 
                         if(drifting && i<2)
@@ -353,13 +384,16 @@ public class CarScript : MonoBehaviour
 
                         rb.AddForce(-wheelRaycasts[i].normal * currentWheelSpeed * 2);
 
-
                         rb.rotation = Quaternion.RotateTowards(rb.rotation, Quaternion.LookRotation(direction, wheelRaycasts[i].normal), 35 * Time.deltaTime);
+
+                        if (!acceleration.isPlaying)
+                            acceleration.Play();
                     }
-                    //carBody.transform.localEulerAngles += Vector3.right * currentWheelSpeed * 0.1f;
+
+                    targetAccelerationSoundIntensity = Mathf.Clamp(targetAccelerationSoundIntensity, 0, 1.25f);
                 }
 
-                if(i>1)
+                if (i>1)
                 {
                     float curTorqueSpeed = myInfo.turnSpeed * currentWheelSpeed;
 
@@ -373,7 +407,10 @@ public class CarScript : MonoBehaviour
 
                 
             }
-        }        
+        }
+
+        acceleration.volume = Mathf.Lerp(acceleration.volume, targetAccelerationSoundIntensity, 1 * Time.deltaTime);
+        acceleration.pitch = Mathf.Lerp(acceleration.pitch, 0.5f + targetAccelerationSoundIntensity * 1.5f, 0.25f * Time.deltaTime);
     }
 
     void LateUpdate()
@@ -460,13 +497,21 @@ public class CarScript : MonoBehaviour
     void OnCollisionEnter(Collision col)
     {
         carBody.transform.position += rb.velocity * 0.01f;
+        float intensity = col.impactForceSum.magnitude;
 
-        if (col.contacts[0].normal.y>0.7f)
+        Debug.Log(intensity);
+
+        if (transform.InverseTransformDirection(col.contacts[0].normal).y>0.6f)
         {
             StartCoroutine("InitialAccelerationBounce");
         }
         else
         {
+            if (intensity > 5)
+                otherSounds.PlayOneShot(mediumImpact, 0.2f * intensity);
+            else
+                otherSounds.PlayOneShot(smallImpact, 0.5f * intensity);
+
             //Debug.Log(rb.velocity);
         }
     }
@@ -505,6 +550,9 @@ public class CarScript : MonoBehaviour
         {
             Debug.DrawLine(wheel.transform.position, wheel.transform.position -transform.up* myInfo.wheelSize, Color.blue, 0.02f);
         }
+
+        if(ret && !wheelIsGrounded[index])
+            otherSounds.PlayOneShot(smallImpact, 0.25f * -(rb.velocity.y));
 
         return ret;
     }

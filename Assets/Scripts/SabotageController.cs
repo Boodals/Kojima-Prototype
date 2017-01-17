@@ -11,7 +11,7 @@ public class SabotageController : MonoBehaviour
     public int ChaseCar { get; set; }
     public static SabotageController Singleton { get { return m_singleton; } }
     private static SabotageController m_singleton;
-    public GameObject m_projectorObject;
+    //public GameObject m_projectorObject;
     public bool m_firstFrame = true;
 
     protected void Start()
@@ -29,7 +29,6 @@ public class SabotageController : MonoBehaviour
         screenSetup.camInfos[0].viewStyle = PlayerCameraScript.ViewStyles.Overhead;
         screenSetup.camInfos[0].positionOnScreen = PlayerCameraScript.ScreenPositions.FullScreen;
         CameraManagerScript.singleton.NewScreenSetup(screenSetup);
-        
     }
 
     protected void Update()
@@ -37,11 +36,11 @@ public class SabotageController : MonoBehaviour
         /*Hacky work around setup ordering*/
         if (m_firstFrame)
         {
-            Camera ref_mainCam = CameraManagerScript.singleton.playerCameras[0].Cam;
-            m_projectorObject.transform.SetParent(ref_mainCam.transform);
-            /*Attach the projector to the overhead camera*/
-            m_projectorObject.transform.localRotation = Quaternion.identity;
-            m_projectorObject.transform.localPosition = Vector3.zero;
+            //Camera ref_mainCam = CameraManagerScript.singleton.playerCameras[0].Cam;
+            //m_projectorObject.transform.SetParent(ref_mainCam.transform);
+            ///*Attach the projector to the overhead camera*/
+            //m_projectorObject.transform.localRotation = Quaternion.identity;
+            //m_projectorObject.transform.localPosition = Vector3.zero;
 
 
             /*Add off-screen death script to the ChaseCar*/

@@ -24,7 +24,7 @@ public class KillIfOffscreen : MonoBehaviour
         Plane[] planes = GeometryUtility.CalculateFrustumPlanes(CameraManagerScript.singleton.playerCameras[0].Cam);
         if (!GeometryUtility.TestPlanesAABB(planes, m_collider.bounds))
         {
-            Debug.Log("Ded");
+
         }
     }
 }

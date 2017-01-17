@@ -463,13 +463,15 @@ public class CarScript : MonoBehaviour
 
     IEnumerator RollBackOver()
     {
-        while(transform.up.y<0.995f)
+        float timer = 5;
+        while(transform.up.y<0.995f && timer>0)
         {
+            timer -= Time.deltaTime;
             //rb.useGravity = false;
             //rb.isKinematic = true;
             //Debug.Log("ROLLIN");
             rb.rotation = Quaternion.Lerp(rb.rotation, Quaternion.LookRotation(transform.forward, Vector3.up), 5 * Time.deltaTime);
-            Debug.DrawLine(transform.position, transform.position + Vector3.up, Color.red);
+            //Debug.DrawLine(transform.position, transform.position + Vector3.up, Color.red);
             //rb.AddForce(Vector3.up * 11, ForceMode.Acceleration);
             yield return new WaitForSeconds(0.01f);
         }
@@ -485,7 +487,10 @@ public class CarScript : MonoBehaviour
             flipTimer += Time.deltaTime;
 
             if (flipTimer > 3)
+            {
+                StopCoroutine("RollBackOver");
                 StartCoroutine("RollBackOver");
+            }
         }
         else
         {

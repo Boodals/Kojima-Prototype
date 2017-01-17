@@ -3,84 +3,16 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
+using GameMode.TeamDistribution;
 
 [CustomEditor(typeof(GameModeBase), true)]
 public class GameModeBaseEditor : Editor
 {
 	private static bool teamFoldout;
-	private static bool[] teamFoldouts = new bool[GameModeMgr.maxNumTeams];
+	private static bool[] teamFoldouts = new bool[GameMode.GameMode.maxNumTeams];
 
 
-
-
-	public override void OnInspectorGUI()
-	{
-		//serializedObject.FindProperty("numTeams").intValue
-
-		SerializedProperty teamDis = serializedObject.FindProperty("teamDistribution");
-
-		if(teamFoldout = EditorGUILayout.Foldout(teamFoldout, "Teams"))
-		{
-			EditorGUI.indentLevel++;
-
-			int newSize = EditorGUILayout.IntSlider("Number of teams", teamDis.arraySize, GameModeMgr.minNumTeams, GameModeMgr.maxNumTeams);
-
-			if(newSize > teamDis.arraySize)
-			{
-				//Were adding atleast one new team
-
-				int i = teamDis.arraySize;
-				teamDis.arraySize = newSize; //Expand the array
-				for(; i < newSize; i++)
-				{
-					//This is a new team
-					SerializedProperty team = teamDis.GetArrayElementAtIndex(i);
-
-					team.FindPropertyRelative("name").stringValue = "Team " + (i + 1);
-				}
-			}
-			else
-			{
-				teamDis.arraySize = newSize;
-			}
-
-
-			//Make sure the team counts add up
-			int[] assignedPlayers = new int[GameModeMgr.maxNumPlayers - GameModeMgr.minNumPlayers + 1];
-
-			for(int i = 0; i < teamDis.arraySize; i++)
-			{
-				SerializedProperty team = teamDis.GetArrayElementAtIndex(i);
-
-				//Make sure it has the rignt number of elements
-				team.FindPropertyRelative("numPlayersPerCount").arraySize = GameModeMgr.maxNumPlayers - GameModeMgr.minNumPlayers + 1;
-
-				for(int j = 0; j <= GameModeMgr.maxNumPlayers - GameModeMgr.minNumPlayers; j++)
-				{
-					SerializedProperty numPlayers = team.FindPropertyRelative("numPlayersPerCount").GetArrayElementAtIndex(j);
-
-					assignedPlayers[j] += numPlayers.intValue;
-				}
-			}
-
-
-			//Now actually draw the GUI for the teams
-			for(int i = 0; i < teamDis.arraySize; i++)
-			{
-				SerializedProperty team = teamDis.GetArrayElementAtIndex(i);
-				
-				DrawTeam(team, i, assignedPlayers);
-			}
-
-			EditorGUI.indentLevel--;
-		}
-
-		serializedObject.ApplyModifiedProperties();
-
-
-		DrawDefaultInspector();
-	}
-
+	
 	private static void DrawTeam(SerializedProperty team, int teamID, int[] assignedPlayers)
 	{
 		string readableName = team.FindPropertyRelative("name").stringValue;
@@ -95,14 +27,17 @@ public class GameModeBaseEditor : Editor
 
 			EditorGUILayout.PropertyField(team.FindPropertyRelative("name"));
 
+			EditorGUILayout.LabelField("Description or goal for the team:");
+			team.FindPropertyRelative("desc").stringValue = EditorGUILayout.TextArea(team.FindPropertyRelative("desc").stringValue);
+
 			EditorGUILayout.LabelField("Players on team per total player count:");
 			EditorGUI.indentLevel++;
 
-			for(int i = 0; i <= GameModeMgr.maxNumPlayers - GameModeMgr.minNumPlayers; i++)
+			for(int i = 0; i <= GameMode.GameMode.maxNumPlayers - GameMode.GameMode.minNumPlayers; i++)
 			{
 				SerializedProperty numPlayers = team.FindPropertyRelative("numPlayersPerCount").GetArrayElementAtIndex(i);
 
-				int playerCount = i + GameModeMgr.minNumPlayers;
+				int playerCount = i + GameMode.GameMode.minNumPlayers;
 
 				Color prevColor = GUI.color;
 
@@ -122,9 +57,10 @@ public class GameModeBaseEditor : Editor
 			EditorGUI.indentLevel--;
 		}
 	}
+	
 
 	[UnityEditor.Callbacks.DidReloadScripts]
-	private static void OnReloadScripts()
+	private static void HandleGameModeAssets()
 	{
 		//This will be called when unity reloads scripts
 
@@ -165,7 +101,7 @@ public class GameModeBaseEditor : Editor
 
 
 		//Find all classes that inherit GameModeBase
-		foreach(System.Type type in GetAllClassesInheritingClass<GameModeBase>(false))
+		foreach(System.Type type in GameMode.GameMode.GetAllClassesInheritingClass<GameModeBase>(false))
 		{
 			//Make sure this GameMode class has its own asset file
 			if(allGameModes.Any(gameMode => gameMode != null && gameMode.name == type.Name))
@@ -214,12 +150,115 @@ public class GameModeBaseEditor : Editor
 			AssetDatabase.CreateFolder(folderLocation, folderName);
 		}
 	}
+	
 
-	private static IEnumerable<System.Type> GetAllClassesInheritingClass<T>(bool canBeAbstract = false)
+	private string[] distributorNames;
+	private string[] distributorDescs;
+
+	private int selectedDistributorID;
+
+	void OnEnable()
 	{
-		return Assembly.GetAssembly(typeof(T)).GetTypes().Where
-		(
-			type => type.IsClass && (canBeAbstract || !type.IsAbstract) && type.IsSubclassOf(typeof(T))
-		);
+		List<TeamDistributor.NameDesc> allDistributors = TeamDistributor.GetAllDistributors();
+
+		distributorNames = new string[allDistributors.Count];
+		distributorDescs = new string[allDistributors.Count];
+
+		int i = 0;
+		foreach(TeamDistributor.NameDesc nameDesc in allDistributors)
+		{
+			distributorNames[i] = nameDesc.name;
+			distributorDescs[i] = nameDesc.desc;
+
+			if(serializedObject.FindProperty("distributorTypeName").stringValue == nameDesc.name)
+			{
+				selectedDistributorID = i;
+			}
+
+			i++;
+		}
+	}
+
+	public override void OnInspectorGUI()
+	{
+		//serializedObject.FindProperty("numTeams").intValue
+
+		DrawTeamDistribution();
+		DrawTeamDistributorSettings();
+
+		serializedObject.ApplyModifiedProperties();
+
+
+		DrawDefaultInspector();
+	}
+
+	private void DrawTeamDistribution()
+	{
+		SerializedProperty teamDis = serializedObject.FindProperty("_teamDistribution");
+
+		if(teamFoldout = EditorGUILayout.Foldout(teamFoldout, "Teams"))
+		{
+			EditorGUI.indentLevel++;
+
+			int newSize = EditorGUILayout.IntSlider("Number of teams", teamDis.arraySize, GameMode.GameMode.minNumTeams, GameMode.GameMode.maxNumTeams);
+
+			if(newSize > teamDis.arraySize)
+			{
+				//Were adding atleast one new team
+
+				int i = teamDis.arraySize;
+				teamDis.arraySize = newSize; //Expand the array
+				for(; i < newSize; i++)
+				{
+					//This is a new team
+					SerializedProperty team = teamDis.GetArrayElementAtIndex(i);
+
+					team.FindPropertyRelative("name").stringValue = "Team " + (i + 1);
+					team.FindPropertyRelative("desc").stringValue = "What is the goal for this team?";
+					team.FindPropertyRelative("numPlayersPerCount").ClearArray();
+				}
+			}
+			else
+			{
+				teamDis.arraySize = newSize;
+			}
+
+
+			//Make sure the team counts add up
+			int[] assignedPlayers = new int[GameMode.GameMode.maxNumPlayers - GameMode.GameMode.minNumPlayers + 1];
+
+			for(int i = 0; i < teamDis.arraySize; i++)
+			{
+				SerializedProperty team = teamDis.GetArrayElementAtIndex(i);
+
+				//Make sure it has the right number of elements
+				team.FindPropertyRelative("numPlayersPerCount").arraySize = GameMode.GameMode.maxNumPlayers - GameMode.GameMode.minNumPlayers + 1;
+
+				for(int j = 0; j <= GameMode.GameMode.maxNumPlayers - GameMode.GameMode.minNumPlayers; j++)
+				{
+					SerializedProperty numPlayers = team.FindPropertyRelative("numPlayersPerCount").GetArrayElementAtIndex(j);
+
+					assignedPlayers[j] += numPlayers.intValue;
+				}
+			}
+
+
+			//Now actually draw the GUI for the teams
+			for(int i = 0; i < teamDis.arraySize; i++)
+			{
+				SerializedProperty team = teamDis.GetArrayElementAtIndex(i);
+
+				DrawTeam(team, i, assignedPlayers);
+			}
+
+			EditorGUI.indentLevel--;
+		}
+	}
+
+	private void DrawTeamDistributorSettings()
+	{
+		selectedDistributorID = EditorGUILayout.Popup("Team distribution", selectedDistributorID, distributorNames);
+		
+		serializedObject.FindProperty("distributorTypeName").stringValue = distributorNames[selectedDistributorID];
 	}
 }

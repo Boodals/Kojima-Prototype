@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
+using GameMode;
 
 public class GameModeMgr : MonoBehaviour
 {
@@ -12,55 +13,15 @@ public class GameModeMgr : MonoBehaviour
 		GameStarted, //When in game, Update etc being called
 		GameFinished, //Scoreboard
 	}
-
-	public class Team
-	{
-		public class SortByScore : Comparer<Team>
-		{
-			public override int Compare(Team x, Team y)
-			{
-				return x.score > y.score ? -1 : (x.score < y.score ? 1 : 0);
-			}
-		}
-
-		public string name;
-		public HashSet<Player> members = new HashSet<Player>();
-
-		public float score = 0;
-
-
-		public Team(string name, params Player[] members)
-		{
-			this.members = new HashSet<Player>(members);
-		}
-	}
-
+	
 	public delegate void CountDownHandler(int timeLeft);
 
-	public delegate void TeamVictorHandler(ReadOnlyCollection<Team> teamsSortedByScore);
-
-
-
-	public const int minNumPlayers = 2;
-	public const int maxNumPlayers = 4;
-
-	public const int minNumTeams = 2;
-	public const int maxNumTeams = maxNumPlayers;
 
 	public const float countDownTime = 3f;
 
 	
 	public static GameModeBase activeGameMode { get; private set; }
 
-	private static List<Team> activeTeams;
-	public static ReadOnlyCollection<Team> teams
-	{
-		get
-		{
-			return new ReadOnlyCollection<Team>(teams);
-		}
-	}
-	
 	public static Phase currentPhase { get; private set; }
 	
 	//Register to this to display countdown visuals/FX, eg "3, 2, 1, GO!"
@@ -69,6 +30,8 @@ public class GameModeMgr : MonoBehaviour
 
 
 	private static GameModeMgr singleton;
+
+	private static List<Player> allPlayers = new List<Player>();
 
 	private static float endOfCountdownTime;
 	private static int countdownTimeSec;
@@ -153,11 +116,32 @@ public class GameModeMgr : MonoBehaviour
 	}
 
 
+	public static void AddPlayer(Player player)
+	{
+		if(currentPhase != Phase.Lobby)
+		{
+			Debug.LogWarning("Attempted to add player when not in lobby!");
+			return;
+		}
+
+		allPlayers.Add(player);
+	}
+	public static void RemovePlayer(Player player)
+	{
+		if(currentPhase != Phase.Lobby)
+		{
+			Debug.LogWarning("Attempted to add player when not in lobby!");
+			return;
+		}
+
+		allPlayers.Remove(player);
+	}
+
 
 
 	private static void AssignTeams()
 	{
-
+		activeGameMode.AssignTeamMembers(allPlayers.ToArray());
 	}
 
 	private static void StartCountdown()
@@ -204,7 +188,7 @@ public class GameModeMgr : MonoBehaviour
 		activeGameMode.GameEnd();
 
 		//Sort teams by score
-		List<Team> sortedTeams = new List<Team>(activeTeams);
+		List<Team> sortedTeams = new List<Team>(activeGameMode.teams);
 		sortedTeams.Sort(new Team.SortByScore());
 
 		foreach(Team team in sortedTeams)

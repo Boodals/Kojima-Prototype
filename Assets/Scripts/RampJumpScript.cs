@@ -8,8 +8,7 @@ using UnityEngine.UI;
 
 public class RampJumpScript : MonoBehaviour
 {   
-    public float            HangTime { get { return m_hangTime.Elapsed(); } }
-    public int              Score { get { return m_internalScore +  Mathf.RoundToInt(HangTime * 100);  } }
+    public int              Score { get { return m_internalScore +  Mathf.RoundToInt(m_hangTime.Elapsed() * 100);  } }
     public PlayerHUDScript    mRef_playerHUD;
 
     private CarScript   mRef_carScript;

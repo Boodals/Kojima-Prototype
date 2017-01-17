@@ -9,6 +9,32 @@ using UnityEngine.UI;
 
 public class VMadnessController : MonoBehaviour
 {
+    public float MaxGameTime { get { return m_maxTime; } }
+    public static VMadnessController Singleton { get { return m_singleton; } }  
+    /// <summary>
+    /// Time left before game is over
+    /// </summary>
+    public float TimeLeft { get { return m_maxTime - m_gameTimer.Elapsed(); } }
+    public int JumpCar { get; set; }
+    /// <summary>
+    /// Assign [0] to attackers spawn point
+    /// </summary>
+    public Transform[]                  m_spawnPoints;
+
+    public float                        m_HUDCountdownDuration = 6.0f;
+    public float                        m_transitionDuration = 2.0f;
+    public Camera                       m_introCamera;
+    public Animator                     m_introCameraAnimator;
+    [SerializeField]
+    private float m_maxTime;
+
+    private static VMadnessController   m_singleton;
+    private Timer                       m_gameTimer;
+    private bool                        m_gameOver;
+    private int[]                       m_score;
+    private STATE m_state, m_prevState;
+
+
     public enum STATE
     {
         NO_STATE,
@@ -18,30 +44,9 @@ public class VMadnessController : MonoBehaviour
         GAME_OVER
     }
 
-    private STATE                       m_state, m_prevState;
-    public Camera                       m_introCamera;
-    public Animator                     m_introCameraAnimator;
-
-    /// <summary>
-    /// Time left before game is over
-    /// </summary>
-    public float TimeLeft { get { return m_maxTime- m_gameTimer.Elapsed();  } }
-    public int                          JumpCar { get; set; }
-    public static VMadnessController    Singleton { get { return m_singleton; } }
-    private static VMadnessController   m_singleton;
-    private Timer                       m_gameTimer;
-    [SerializeField]
-    private float                       m_maxTime;
-    public float                        MaxGameTime { get { return m_maxTime; } }
-
-    private bool                        m_gameOver;
-    private int                         m_score = 0;
-
-
-
     public void JumpComplete(int score)
     {
-        m_score = score;
+        m_score[JumpCar] = score;
         m_state = STATE.GAME_OVER;
     }
 
@@ -60,10 +65,12 @@ public class VMadnessController : MonoBehaviour
     {
         if (m_singleton != null) return;
 
+        m_score = new int[4];
         m_gameTimer = new Timer();
         //m_gameTimer.Pause();
 
         m_singleton = this;
+        //DontDestroyOnLoad(this.gameObject);
     }
 
     // Use this for initialization
@@ -75,8 +82,31 @@ public class VMadnessController : MonoBehaviour
         m_state     = STATE.INTRO;
         m_prevState = STATE.NO_STATE;
 
-        ///*Hide the player HUDS*/
-        foreach (var hud in MainHUDScript.singleton.playerHUDs) hud.gameObject.SetActive(false);
+        //Index for loops
+        int idx = 0;
+        /*Move cars to correct locations*/
+        foreach (var car in GameController.singleton.players)
+        {
+            if (car.playerIndex == JumpCar)
+            {
+                car.transform.position = m_spawnPoints[0].position;
+                car.transform.rotation = m_spawnPoints[0].rotation;
+            }
+            else
+            {
+                car.transform.position = m_spawnPoints[idx].position;
+                car.transform.rotation = m_spawnPoints[idx].rotation;
+                ++idx;
+            }
+        }
+
+        idx = 0;
+        ///*Hide the player HUDS and update scores*/
+        foreach (var hud in MainHUDScript.singleton.playerHUDs)
+        {
+            hud.DisplayScore(m_score[idx++]);
+            hud.gameObject.SetActive(false);
+        }
         CameraManagerScript.singleton.gameObject.SetActive(false);
 
         //CameraManagerScript.ScreenSetup introSetup = new CameraManagerScript.ScreenSetup(1);
@@ -138,6 +168,11 @@ public class VMadnessController : MonoBehaviour
         {
             m_state = STATE.COUNTDOWN;
         }
+        //Let players skip intro
+        else if (Input.anyKeyDown)
+        {
+            m_state = STATE.COUNTDOWN;
+        }
     }
 
     private void CountdownTransition()
@@ -152,13 +187,13 @@ public class VMadnessController : MonoBehaviour
 
     IEnumerator ShowHUD()
     {
-        yield return new WaitForSeconds(2.0f);
+        yield return new WaitForSeconds(m_transitionDuration);
         foreach (var hud in MainHUDScript.singleton.playerHUDs) hud.gameObject.SetActive(true);
     }
 
     private void CountdownUpdate()
     {
-        if (m_gameTimer.Elapsed() >= 6.0f)
+        if (m_gameTimer.Elapsed() >= m_HUDCountdownDuration + m_transitionDuration)
         {
             m_state = STATE.PLAY;
         }
@@ -188,11 +223,23 @@ public class VMadnessController : MonoBehaviour
     {
         MainHUDScript.singleton.UpdateTimer(0, 0);
         GameController.singleton.AllCarsCanMove(false);
+
+        //Disable ramp jump script for current car
+        GameController.singleton.players[JumpCar].GetComponent<RampJumpScript>().enabled = false;
+        //@some issues here so disable for now
+        ////Start with next player
+        //if (++JumpCar >= 4)
+        //{
+        //    //Quit if all players have jumped
+        //    Debug.Log("All cars have jumped!");
+        //    Application.Quit();
+        //}
     }
 
     private void GameOverUpdate()
     {
         //Display score to cars && give option to quit / continue
+        
         if (Input.anyKeyDown) SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
  

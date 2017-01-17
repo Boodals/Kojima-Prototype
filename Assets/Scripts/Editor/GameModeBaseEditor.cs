@@ -64,6 +64,7 @@ public class GameModeBaseEditor : Editor
 			}
 
 
+			//Now actually draw the GUI for the teams
 			for(int i = 0; i < teamDis.arraySize; i++)
 			{
 				SerializedProperty team = teamDis.GetArrayElementAtIndex(i);
@@ -80,14 +81,15 @@ public class GameModeBaseEditor : Editor
 		DrawDefaultInspector();
 	}
 
-	private static void DrawTeam(SerializedProperty team, int id, int[] assignedPlayers)
+	private static void DrawTeam(SerializedProperty team, int teamID, int[] assignedPlayers)
 	{
 		string readableName = team.FindPropertyRelative("name").stringValue;
 		if(readableName == "")
 		{
-			readableName = "Team " + (id + 1);
+			readableName = "Team " + (teamID + 1);
 		}
-		if(teamFoldouts[id] = EditorGUILayout.Foldout(teamFoldouts[id], readableName))
+
+		if(teamFoldouts[teamID] = EditorGUILayout.Foldout(teamFoldouts[teamID], readableName))
 		{
 			EditorGUI.indentLevel++;
 

@@ -6,7 +6,7 @@ public class MainHUDScript : MonoBehaviour
     public static MainHUDScript singleton;
     public PlayerHUDScript[] playerHUDs;
     public GameObject playerHUDPrefab;
-
+ 
 
 
     void Awake()
@@ -44,5 +44,18 @@ public class MainHUDScript : MonoBehaviour
     public void UpdateScore(int score, int playerNum)
     {
         playerHUDs[playerNum - 1].DisplayScore(score);
+    }
+
+    public void ToggleHUDLights(bool lightsOn)
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            playerHUDs[i].ToggleLights(lightsOn);
+        }
+    }
+
+    public void ShowNextItem(int playerNum, string itemName)
+    {
+        playerHUDs[playerNum - 1].ShowNextItem(itemName);
     }
 }

@@ -140,7 +140,9 @@ public class CameraManagerScript : MonoBehaviour {
             playerCameras[i].SetupCamera(newSetup.camInfos[i]);
         }
 
-        for(float delay = 1; delay>0; delay-=Time.deltaTime)
+        MainHUDScript.singleton.ToggleHUDLights(newSetup.cameras!=1);
+
+        for (float delay = 1; delay>0; delay-=Time.deltaTime)
         {
             yield return new WaitForEndOfFrame();
         }

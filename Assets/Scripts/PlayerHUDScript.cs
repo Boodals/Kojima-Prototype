@@ -18,6 +18,9 @@ public class PlayerHUDScript : MonoBehaviour
     [Header("Timer Variables")]
     public Text timeTxt;
 
+    [Header("Item Variables")]
+    public Text itemTxt;
+
     // Use this for initialization
     void Start ()
     {
@@ -69,6 +72,27 @@ public class PlayerHUDScript : MonoBehaviour
     public void DisplayTimer(int mins, int seconds)
     {
         timeTxt.text = "" + mins + ":" + seconds;
+    }
+
+    public void ToggleLights(bool areViewable)
+    {
+        if(areViewable)
+        {
+            myLights[0].gameObject.SetActive(true);
+            myLights[1].gameObject.SetActive(true);
+        }
+        else
+        {
+            myLights[0].gameObject.SetActive(false);
+            myLights[1].gameObject.SetActive(false);
+        }
+    }
+
+    public void ShowNextItem(string iconName)
+    {
+        itemTxt.text = iconName;
+
+        //will later add functionality to change icon images for items
     }
 
 }

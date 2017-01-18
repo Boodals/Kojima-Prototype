@@ -9,8 +9,8 @@ using GameMode.TeamDistribution;
 public abstract class GameModeBase : ScriptableObject
 {
 	[SerializeField, HideInInspector]
-	protected TeamDistribution[] _teamDistribution;
-	public TeamDistribution[] teamDistribution
+	protected TeamDistributionSettings[] _teamDistribution;
+	public TeamDistributionSettings[] teamDistribution
 	{
 		get
 		{
@@ -18,7 +18,7 @@ public abstract class GameModeBase : ScriptableObject
 		}
 	}
 
-	[SerializeField, Tooltip("Number of rounds")]
+	[SerializeField, HideInInspector]
 	protected int _numRounds = 3;
 	public int numRounds
 	{
@@ -28,7 +28,7 @@ public abstract class GameModeBase : ScriptableObject
 		}
 	}
 
-	[SerializeField, Tooltip("If at the end of the rounds two or more players are tied, should we do additonal rounds until there is no longer a tie?")]
+	[SerializeField, HideInInspector, Tooltip("If at the end of the rounds two or more players are tied, should we do additonal rounds until there is no longer a tie?")]
 	protected bool _doTieBreaker = true;
 	public bool doTieBreaker
 	{

@@ -1,0 +1,109 @@
+
+
+
+[XXX] = TODO
+
+
+
+
+With my system, to create a GameMode you just create a class file inheriting GameModeBase.
+The new class will be detected and an asset will be created that you can use to configure the GameMode.
+[
+A scene file will be created for the GameMode. In the scene you can put objects that you only want to show up in your GameMode.
+Thanks to Unity's "new" Additive Scene Loading, we can load multiple scenes at once, which means we dont have to duplicate objects between scenes.
+
+How will it work?
+The main map will be in its own scene. This means that it doesnt get unloaded and then reloaded every time the GameMode changes.
+When a GameMode is started, the GameModeMgr will load its scene file ontop of the map.
+
+Using this, the Lobby could also be treated as a GameMode that gets loaded when real GameModes exit.
+It can have its own objects which arent part of any GameMode.
+We can put the trigger volumes in it which will be used to start various GameModes when the player cars enter them.
+
+]
+
+For every GameMode, players will be divided into teams.
+The GameMode can describe exactly how many players are in each team, and its done in a way that allows you complete control.
+For example, you can say "If we have 3 players, I want 2 in the Attacking team, and 1 in the Defending team".
+Or if you're doing a free-for-all GameMode, you can create a team for each player, and that will work just fine.
+I did it like that because it assures absolute control no matter the player count.
+If it was percentage based, eg "Half the players go in the Attacking Team, half in the Defending team", you couldnt get enough control when the player count is low (which it will be, being a 2-4 player game).
+What would happen with three players? What team gets the additional player?
+Doing it this way means that it is always very clear what will happen.
+
+In addition to player distribution between teams, you can assign each team a name, and a description or goal.
+[The idea being the goal will be displayed to the players as text before the game starts.]
+You can also decide how many rounds (if any) are used for the GameMode.
+And what algorithm is used to distribute the players between the teams.
+Eg
+	Random, where each player is assigned to a random team.
+	Random Balanced, where its random, but it will prioritize putting players into teams they havent played yet.
+You can also create your own algorithms which any GameMode author could use by inheriting the GameMode.TeamDistribution.TeamDistributor class. These will be detected and added to the list automatically.
+
+
+
+
+
+
+GameModeMgr
+	Active GameMode
+	Changing GameMode from lobby (public static functions)
+	Timing/phases (lobby, [intro/cutscene], countdown, game start, game end)
+	Player list
+	[Rounds]
+		[Tie-breaker rounds]
+	[Loading/Unloading GameMode scenes additively]
+
+
+GameModeBase (abstract)
+	(GameModes will need to set up these in the inspector)
+	Teams
+		Name
+		Description/Goal
+		Number of members for each possible number of players
+	Number of rounds
+	Team distribution (how players are assigned to teams)
+
+
+Things handled by GameModes
+	Camera setup
+	Adding score to teams
+	End game conditions
+		(Should probably have an easy-to-use timer script that can be shared, and a trigger script)
+
+[
+Spawn points
+	Team
+	int priority
+		Lower priority will be chosen before higher priority
+	float enemySearchRadius
+		If another player from another team is within this distance, dont use this point (or set to 0)
+		(Visible in editor when selected)
+]
+
+[
+Player
+	Car GameObject
+	Handles inputs
+		Could be expanded to support online players
+]
+
+
+GameModes have a scene asset
+When GameMode is started, Mgr will load the scene file additively
+	We dont need to unload and reload the map every time a GameMode is changed
+	Allows each GameMode to add objects to the map without interfering with other GameModes
+
+Lobby can be treated as a GameMode
+	Scene includes trigger areas for starting other GameModes
+		When a real GameMode is started, Lobby will 'end' which will unload the Lobby scene
+			Also means the lobby could have objects that real GameModes wont have
+
+Managers, UI, etc should be in its own scene that is always loaded
+
+
+
+
+
+
+

@@ -183,16 +183,25 @@ public class GameModeBaseEditor : Editor
 	{
 		//serializedObject.FindProperty("numTeams").intValue
 
-		DrawTeamDistribution();
-		DrawTeamDistributorSettings();
+		DrawRounds();
+
+		DrawTeamSettings();
+		DrawTeamDistributor();
 
 		serializedObject.ApplyModifiedProperties();
 
+		EditorGUILayout.Separator();
 
 		DrawDefaultInspector();
 	}
 
-	private void DrawTeamDistribution()
+	private void DrawRounds()
+	{
+		EditorGUILayout.PropertyField(serializedObject.FindProperty("_numRounds"));
+		EditorGUILayout.PropertyField(serializedObject.FindProperty("_doTieBreaker"));
+	}
+
+	private void DrawTeamSettings()
 	{
 		SerializedProperty teamDis = serializedObject.FindProperty("_teamDistribution");
 
@@ -255,7 +264,7 @@ public class GameModeBaseEditor : Editor
 		}
 	}
 
-	private void DrawTeamDistributorSettings()
+	private void DrawTeamDistributor()
 	{
 		selectedDistributorID = EditorGUILayout.Popup("Team distribution", selectedDistributorID, distributorNames);
 		

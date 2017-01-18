@@ -52,9 +52,9 @@ namespace GameMode
 
 		public float score = 0;
 
-		public TeamDistribution.TeamDistribution distribution;
+		public TeamDistribution.TeamDistributionSettings distribution;
 
-		public Team(TeamDistribution.TeamDistribution distribution, params Player[] members)
+		public Team(TeamDistribution.TeamDistributionSettings distribution, params Player[] members)
 		{
 			this.distribution = distribution;
 			this.members = new List<Player>(members);
@@ -65,7 +65,7 @@ namespace GameMode
 	namespace TeamDistribution
 	{
 		[System.Serializable]
-		public class TeamDistribution
+		public class TeamDistributionSettings
 		{
 			public string name;
 			public string desc;

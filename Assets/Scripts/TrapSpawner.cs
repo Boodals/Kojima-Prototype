@@ -8,6 +8,7 @@ public class TrapSpawner : MonoBehaviour {
     public float spawnInterval;
     public float currentTimer = 0.0f;    
     public Vector3 spawnPosition;
+    public int playerID;
     //public Text nextTrap;
 
     int randomArrayIndex;
@@ -17,10 +18,13 @@ public class TrapSpawner : MonoBehaviour {
 
     // Use this for initialization
     void Start () {
+        playerID = gameObject.GetComponent<CarScript>().playerIndex;
+
         if (spawnTraps == true)
         {
             traps = Resources.LoadAll("Traps");
             randomArrayIndex = Random.Range(0, traps.Length);
+            MainHUDScript.singleton.ShowNextItem(playerID, traps[randomArrayIndex].name);
             //nextTrap.text = traps[randomArrayIndex].name;
         }
     }
@@ -39,7 +43,7 @@ public class TrapSpawner : MonoBehaviour {
                 //trapRotation = new Quaternion(Quaternion.identity.x, Quaternion.identity.y, gameObject.transform.rotation.z, gameObject.transform.rotation.w);
                 Instantiate(traps[randomArrayIndex], transform.position - -transform.forward * 6 + transform.up, Quaternion.LookRotation(transform.up, transform.forward));
                 randomArrayIndex = Random.Range(0, traps.Length);
-                //nextTrap.text = traps[randomArrayIndex].name;
+                MainHUDScript.singleton.ShowNextItem(playerID, traps[randomArrayIndex].name);
             }
         }
 	}

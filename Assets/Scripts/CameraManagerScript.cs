@@ -111,6 +111,8 @@ public class CameraManagerScript : MonoBehaviour {
             MainHUDScript.singleton.playerHUDs[i].GetComponent<Canvas>().worldCamera = playerCameras[i].GetUICameraComponent();
             MainHUDScript.singleton.playerHUDs[i].GetComponent<Canvas>().planeDistance = 0.5f;
         }
+
+        SetupThirdPersonForAllPlayers();
     }
 
     IEnumerator Transition(ScreenSetup newSetup)

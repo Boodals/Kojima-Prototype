@@ -100,13 +100,11 @@ public class CarScript : MonoBehaviour
 
     public ParticleSystem skidSmoke;
 
-    //Audio
-    AudioSource engine, acceleration, otherSounds;
-    public AudioClip smallImpact, mediumImpact;
-
     private CarResetter mRef_carResetter;
     private CapsuleCollider mRef_collider;
     public CapsuleCollider CarCollider { get { return mRef_collider;  } }
+
+    private CarSoundScript soundScript;
 
     // Use this for initialization
     void Awake()
@@ -134,18 +132,8 @@ public class CarScript : MonoBehaviour
         mRef_carResetter = GetComponent<CarResetter>();
         mRef_collider = GetComponent<CapsuleCollider>();
 
-        //Create audio sources
-        engine = gameObject.AddComponent<AudioSource>();
-        engine.spatialBlend = 0;
-        engine.loop = true;
-        engine.volume = 0.25f;
-
-        acceleration = gameObject.AddComponent<AudioSource>();
-        acceleration.spatialBlend = 0;
-        acceleration.loop = true;
-
-        otherSounds = gameObject.AddComponent<AudioSource>();
-        otherSounds.spatialBlend = 0;
+        //Cache a reference to the CarSound script
+        soundScript = GetComponent<CarSoundScript>();
     }
 
     void Start()
@@ -207,12 +195,7 @@ public class CarScript : MonoBehaviour
     public void ApplyCarInfo(CarInfo newInfo)
     {
         myInfo = newInfo;
-
-        engine.clip = myInfo.engineAudioClip;
-        engine.Play();
-
-        acceleration.clip = myInfo.accelerationAudioClip;
-        acceleration.Stop();
+        soundScript.SetSounds(myInfo.engineAudioClip, myInfo.accelerationAudioClip);
     }
 
     public Vector3 GetVelocity()
@@ -310,9 +293,7 @@ public class CarScript : MonoBehaviour
                 cancelHoriForce = 0;
 
                 if (!skidSmoke.isPlaying)
-                    skidSmoke.Play();
-                //if (skidMarkTrails.Length == 0)
-                //CreateSkidMarkTrails();            
+                    skidSmoke.Play();        
             }
             else
             {
@@ -335,12 +316,16 @@ public class CarScript : MonoBehaviour
                         thisWheelCanDrive = true;
                         break;
                     case CarInfo.DriveMode.RearWheels:
-                        if(i<=1)
+                        if (i <= 1)
+                        {
                             thisWheelCanDrive = true;
+                        }
                         break;
                     case CarInfo.DriveMode.FrontWheels:
-                        if(i>1)
+                        if (i > 1)
+                        {
                             thisWheelCanDrive = true;
+                        }
                         break;
                 }
 
@@ -356,15 +341,11 @@ public class CarScript : MonoBehaviour
                 }
 
                 float forwardsMultiplier = Input.GetAxisRaw("Acceleration" + playerInputTag) + (-Input.GetAxisRaw("Brake" + playerInputTag));
-                //Audio
-                targetAccelerationSoundIntensity = -forwardsMultiplier;
 
                 if (thisWheelCanDrive)
                 {
                     if ((drifting && i > 1) || !drifting)
                         rb.angularDrag += targetAngularDrag/4;
-
-                    engine.pitch = Mathf.Lerp(engine.pitch, 0.95f - (forwardsMultiplier * 0.8f), 1 * Time.deltaTime);
 
                     if (forwardsMultiplier != 0)
                     {
@@ -382,15 +363,11 @@ public class CarScript : MonoBehaviour
                         rb.AddForce(direction * myInfo.acceleration * Input.GetAxisRaw("Acceleration" + playerInputTag), ForceMode.Acceleration);
                         rb.AddForce(-direction * myInfo.acceleration * Input.GetAxisRaw("Brake" + playerInputTag) * 0.55f, ForceMode.Acceleration);
 
-                        rb.AddForce(-wheelRaycasts[i].normal * currentWheelSpeed * 2);
+                        rb.AddForce(-wheelRaycasts[i].normal * currentWheelSpeed * 10);
 
                         rb.rotation = Quaternion.RotateTowards(rb.rotation, Quaternion.LookRotation(direction, wheelRaycasts[i].normal), 35 * Time.deltaTime);
-
-                        if (!acceleration.isPlaying)
-                            acceleration.Play();
                     }
 
-                    targetAccelerationSoundIntensity = Mathf.Clamp(targetAccelerationSoundIntensity, 0, 1.25f);
                 }
 
                 if (i>1)
@@ -408,9 +385,6 @@ public class CarScript : MonoBehaviour
                 
             }
         }
-
-        acceleration.volume = Mathf.Lerp(acceleration.volume, targetAccelerationSoundIntensity, 1 * Time.deltaTime);
-        acceleration.pitch = Mathf.Lerp(acceleration.pitch, 0.5f + targetAccelerationSoundIntensity * 1.5f, 0.25f * Time.deltaTime);
     }
 
     void LateUpdate()
@@ -444,9 +418,9 @@ public class CarScript : MonoBehaviour
 
         veloEuler = Vector3.ClampMagnitude(veloEuler, 2);
 
-        carBody.transform.eulerAngles += veloEuler * 0.925f;
+        //carBody.transform.eulerAngles += veloEuler * 0.925f;
         carBody.transform.localRotation = Quaternion.Lerp(carBody.transform.localRotation, Quaternion.Euler(targetEuler), 11 * Time.deltaTime);
-        carBody.transform.localPosition += Vector3.up * (Mathf.Abs(veloEuler.x * 0.01f) + Mathf.Abs(veloEuler.z * 0.01f));
+        //carBody.transform.localPosition += Vector3.up * (Mathf.Abs(veloEuler.x * 0.01f) + Mathf.Abs(veloEuler.z * 0.01f));
     }
 
     IEnumerator InitialAccelerationBounce()
@@ -463,21 +437,17 @@ public class CarScript : MonoBehaviour
 
     IEnumerator RollBackOver()
     {
+        //This timer is here just in case this loop never ends naturally
         float timer = 5;
+
         while(transform.up.y<0.995f && timer>0)
         {
             timer -= Time.deltaTime;
-            //rb.useGravity = false;
-            //rb.isKinematic = true;
-            //Debug.Log("ROLLIN");
             rb.rotation = Quaternion.Lerp(rb.rotation, Quaternion.LookRotation(transform.forward, Vector3.up), 5 * Time.deltaTime);
-            //Debug.DrawLine(transform.position, transform.position + Vector3.up, Color.red);
-            //rb.AddForce(Vector3.up * 11, ForceMode.Acceleration);
             yield return new WaitForSeconds(0.01f);
         }
 
         rb.useGravity = true;
-        //rb.isKinematic = false;
     }
 
     void OnCollisionStay()
@@ -512,11 +482,6 @@ public class CarScript : MonoBehaviour
         }
         else
         {
-            if (intensity > 5)
-                otherSounds.PlayOneShot(mediumImpact, 0.2f * intensity);
-            else
-                otherSounds.PlayOneShot(smallImpact, 0.5f * intensity);
-
             //Debug.Log(rb.velocity);
         }
     }
@@ -555,9 +520,6 @@ public class CarScript : MonoBehaviour
         {
             Debug.DrawLine(wheel.transform.position, wheel.transform.position -transform.up* myInfo.wheelSize, Color.blue, 0.02f);
         }
-
-        if(ret && !wheelIsGrounded[index])
-            otherSounds.PlayOneShot(smallImpact, 0.25f * -(rb.velocity.y));
 
         return ret;
     }

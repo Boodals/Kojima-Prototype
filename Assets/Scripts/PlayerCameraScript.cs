@@ -120,17 +120,27 @@ public class PlayerCameraScript : MonoBehaviour {
     {
         currentViewStyle = newViewStyle;
 
-        if(newViewStyle==ViewStyles.ThirdPerson && mainPlayer == null)
+        switch (newViewStyle)
         {
-            for(int i=0; i<followingThesePlayers.Length; i++)
-            {
-                if(followingThesePlayers[i])
+            case ViewStyles.Overhead:
+                cam.orthographic = true;
+                break;
+            case ViewStyles.ThirdPerson:
+
+                cam.orthographic = false;
+                if(mainPlayer==null)
                 {
-                    mainPlayer = GameController.singleton.players[i];
-                    StartCoroutine("ResetThirdPersonAngle");
-                    i = 99;
+                    for (int i = 0; i < followingThesePlayers.Length; i++)
+                    {
+                        if (followingThesePlayers[i])
+                        {
+                            mainPlayer = GameController.singleton.players[i];
+                            StartCoroutine("ResetThirdPersonAngle");
+                            i = 99;
+                        }
+                    }
                 }
-            }
+                break;
         }
     }
 
@@ -164,15 +174,17 @@ public class PlayerCameraScript : MonoBehaviour {
             freeCamTimer = 4;
 
         //Handles the "automatic" third person camera
-        if (freeCamTimer <= 0)
+        if (freeCamTimer <= 0 && !mainPlayer.InMidAir)
         {
             Vector3 targetCurPos = mainPlayer.transform.eulerAngles;
             targetCurPos.y -= 180;
-            curPos.y = Mathf.LerpAngle(curPos.y, Quaternion.Euler(targetCurPos).eulerAngles.y, 1 * Time.deltaTime);
+            curPos.y = Mathf.LerpAngle(curPos.y, Quaternion.Euler(targetCurPos).eulerAngles.y, 2 * Time.deltaTime);
+            curPos.x = Mathf.LerpAngle(curPos.x, 25, 1 * Time.deltaTime);
         }
         else
+        {
             freeCamTimer -= Time.deltaTime;
-
+        }
 
 
         Vector3 backwards = new Vector3(0, 0, -(distanceFromPlayer));
@@ -188,10 +200,20 @@ public class PlayerCameraScript : MonoBehaviour {
 
         //Debug.DrawLine(mainPlayer.transform.position + Vector3.up, targetPos, Color.green);
         RaycastHit rH;
-        if(Physics.Linecast(mainPlayer.transform.position + mainPlayer.transform.up, targetPos, out rH, LayerMask.GetMask("Default")))
+        if(Physics.Linecast(mainPlayer.transform.position + Vector3.up, targetPos, out rH, LayerMask.GetMask("Default")))
         {
             //Debug.Log(rH.collider.gameObject.name);
-            targetPos = rH.point + rH.normal*0.2f;
+            //Debug.Log(mainPlayer.transform.forward);
+
+            //if (Mathf.Abs(mainPlayer.transform.forward.y) > 0.45f)
+                curPos.x += mainPlayer.transform.forward.y * Time.deltaTime * 10;
+
+            //Debug.Log(Vector3.Distance(transform.position, mainPlayer.transform.position));
+
+            if (Vector3.Distance(transform.position, mainPlayer.transform.position) < 33)
+                curPos.x += 15 * Time.deltaTime;
+
+            targetPos = rH.point + rH.normal*0.25f;
         }
 
         transform.position = Vector3.Lerp(transform.position, targetPos + mainPlayer.GetVelocity() * Time.deltaTime, 8 * Time.deltaTime);
@@ -239,6 +261,8 @@ public class PlayerCameraScript : MonoBehaviour {
 
     void Overhead(Vector3 input)
     {
+        bool orthographicMode = true;
+
         Vector3 pos = Vector3.zero;
 
         if (!mainPlayer)
@@ -260,8 +284,19 @@ public class PlayerCameraScript : MonoBehaviour {
             }
         }
 
-        targetFOV = 80 + distance * 0.35f;
-        targetFOV = Mathf.Clamp(targetFOV, 80, 110);
+        targetFOV = 100 + distance * 0.35f;
+        targetFOV = Mathf.Clamp(targetFOV, 80, 120);
+
+        if (orthographicMode)
+        {
+            //cam.orthographic = true;
+            cam.orthographicSize = 10 + distance * 0.5f;
+            distance = 100;
+        }
+        else
+        {
+            //cam.orthographic = false;
+        }
 
         height += distance * 0.1f;
 

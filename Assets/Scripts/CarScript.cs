@@ -61,7 +61,14 @@ public class CarScript : MonoBehaviour
         //@Assumes 4 wheels, can be improved if other vehicles are required.
         get { return (wheelIsGrounded[0] && wheelIsGrounded[1] && wheelIsGrounded[2] && wheelIsGrounded[3]); }
     }
-
+    /// <summary>
+    /// Returns true if all the wheels are NOT grounded
+    /// </summary>
+    public bool InMidAir
+    {
+        //@Assumes 4 wheels, can be improved if other vehicles are required.
+        get { return (!wheelIsGrounded[0] && !wheelIsGrounded[1] && !wheelIsGrounded[2] && !wheelIsGrounded[3]); }
+    }
     private bool inWater = false;
     public bool InWater
     {
@@ -75,7 +82,7 @@ public class CarScript : MonoBehaviour
 
     Vector3[] wheelLocalPositions;
 
-
+    bool currentlySkidding = false;
     TrailRenderer[] skidMarkTrails;
     public GameObject skidMarkPrefab;
     Vector3 skidDirection;
@@ -270,13 +277,10 @@ public class CarScript : MonoBehaviour
     // Update is called once per frame
     void FixedUpdate()
     {
-
         float currentVelocity = rb.velocity.magnitude;
         currentWheelSpeed = currentVelocity * Vector3.Dot(rb.velocity.normalized, -transform.forward);
         ManageSkidMarkTrails();
         rb.angularDrag = 0;
-
-        float targetAccelerationSoundIntensity = 0;
 
         if (playersCanMove && canIMove)
         {
@@ -290,16 +294,10 @@ public class CarScript : MonoBehaviour
 
             if (drifting)
             {
-                cancelHoriForce = 0;
-
-                if (!skidSmoke.isPlaying)
-                    skidSmoke.Play();        
+                cancelHoriForce = 0;   
             }
             else
             {
-                if (skidSmoke.isPlaying)
-                    skidSmoke.Stop();
-
                 cancelHoriForce = Mathf.Lerp(cancelHoriForce, 1, 0.5f * Time.deltaTime);
             }
 
@@ -364,6 +362,7 @@ public class CarScript : MonoBehaviour
                         rb.AddForce(-direction * myInfo.acceleration * Input.GetAxisRaw("Brake" + playerInputTag) * 0.55f, ForceMode.Acceleration);
 
                         rb.AddForce(-wheelRaycasts[i].normal * currentWheelSpeed * 10);
+                        rb.AddForce(-Vector3.up * 10);
 
                         rb.rotation = Quaternion.RotateTowards(rb.rotation, Quaternion.LookRotation(direction, wheelRaycasts[i].normal), 35 * Time.deltaTime);
                     }
@@ -402,6 +401,11 @@ public class CarScript : MonoBehaviour
             }
         }
 
+        SuspensionEffects();
+    }
+
+    protected virtual void SuspensionEffects()
+    {
         //Suspension
         carBody.transform.position += Vector3.up * -rb.velocity.y * 0.1f;
 
@@ -413,14 +417,14 @@ public class CarScript : MonoBehaviour
         Vector3 veloEuler = veloLocal;
 
         veloEuler.x = veloLocal.z * 0.015f;
-        veloEuler.z = veloLocal.x * 0.6f;
+        veloEuler.z = veloLocal.x * 0.4f;
         veloEuler.y = veloLocal.x * 0.5f;
 
         veloEuler = Vector3.ClampMagnitude(veloEuler, 2);
 
-        //carBody.transform.eulerAngles += veloEuler * 0.925f;
+        carBody.transform.eulerAngles += veloEuler * 0.925f;
         carBody.transform.localRotation = Quaternion.Lerp(carBody.transform.localRotation, Quaternion.Euler(targetEuler), 11 * Time.deltaTime);
-        //carBody.transform.localPosition += Vector3.up * (Mathf.Abs(veloEuler.x * 0.01f) + Mathf.Abs(veloEuler.z * 0.01f));
+        carBody.transform.localPosition += Vector3.up * (Mathf.Abs(veloEuler.x * 0.01f) + Mathf.Abs(veloEuler.z * 0.01f));
     }
 
     IEnumerator InitialAccelerationBounce()
@@ -472,11 +476,11 @@ public class CarScript : MonoBehaviour
     void OnCollisionEnter(Collision col)
     {
         carBody.transform.position += rb.velocity * 0.01f;
-        float intensity = col.impactForceSum.magnitude;
+        float intensity = col.relativeVelocity.magnitude;
 
         //Debug.Log(intensity);
 
-        if (transform.InverseTransformDirection(col.contacts[0].normal).y>0.6f)
+        if (Vector3.Dot(transform.forward, col.contacts[0].normal)<-0.2f)
         {
             StartCoroutine("InitialAccelerationBounce");
         }
@@ -496,9 +500,22 @@ public class CarScript : MonoBehaviour
         Vector3 velo = rb.velocity;
         Vector3 localVelo = transform.InverseTransformDirection(velo);
 
-
         float speedSimilarity = Mathf.Abs(Vector3.Dot(transform.forward, rb.velocity));
 
+        if (Mathf.Abs(localVelo.x) > 3f)
+        {
+            currentlySkidding = true;
+
+            if (!skidSmoke.isPlaying)
+                skidSmoke.Play();
+        }
+        else
+        {
+            currentlySkidding = false;
+
+            if (skidSmoke.isPlaying)
+                skidSmoke.Stop();
+        }
 
         wheelTorque = localVelo.z;
         localVelo.x = Mathf.Lerp(localVelo.x, 0, cancelHoriForce * (1) * Time.deltaTime);

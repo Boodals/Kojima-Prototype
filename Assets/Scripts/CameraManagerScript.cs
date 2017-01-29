@@ -33,13 +33,26 @@ public class CameraManagerScript : MonoBehaviour {
     public Image transitionImg;
 
     //QUICK SETUPS
-    public void SetupOverhead()
+    public void SetupLobbyCamera()
     {
         ScreenSetup newSS = new ScreenSetup();
         newSS.cameras = 1;
         newSS.camInfos = new PlayerCameraScript.CameraInfo[4];
 
         newSS.camInfos[0].followThesePlayers = new bool[4] { true, true, true, true };
+        newSS.camInfos[0].viewStyle = PlayerCameraScript.ViewStyles.Overhead;
+        newSS.camInfos[0].positionOnScreen = PlayerCameraScript.ScreenPositions.FullScreen;
+
+        NewScreenSetup(newSS);
+    }
+
+    public void SetupSingularOverheadView(bool followPlayerOne, bool followPlayerTwo, bool followPlayerThree, bool followPlayerFour)
+    {
+        ScreenSetup newSS = new ScreenSetup();
+        newSS.cameras = 1;
+        newSS.camInfos = new PlayerCameraScript.CameraInfo[4];
+
+        newSS.camInfos[0].followThesePlayers = new bool[4] { followPlayerOne, followPlayerTwo, followPlayerThree, followPlayerFour };
         newSS.camInfos[0].viewStyle = PlayerCameraScript.ViewStyles.Overhead;
         newSS.camInfos[0].positionOnScreen = PlayerCameraScript.ScreenPositions.FullScreen;
 
@@ -117,7 +130,7 @@ public class CameraManagerScript : MonoBehaviour {
 
     IEnumerator Transition(ScreenSetup newSetup)
     {
-        float speed = 2.5f;
+        float speed = 4.5f;
 
         transitionImg.fillAmount = 0;
         transitionImg.color = new Color(1, 1, 1, 0);
@@ -196,6 +209,11 @@ public class CameraManagerScript : MonoBehaviour {
 
         if (Input.GetKeyDown(KeyCode.Alpha1))
             SetupThirdPersonForAllPlayers();
+
+        if(Input.GetKeyDown(KeyCode.Alpha4))
+        {
+            SetupSingularOverheadView(true, true, false, false);
+        }
     }
 
     PlayerCameraScript[] CreateCameras(int number)

@@ -22,7 +22,7 @@ public class GameController : MonoBehaviour {
     void Update () {
 
         if (Input.GetKeyDown(KeyCode.Alpha4))
-            CameraManagerScript.singleton.SetupOverhead();
+            CameraManagerScript.singleton.SetupLobbyCamera();
 
         if (Input.GetKeyDown(KeyCode.Alpha5))
         {

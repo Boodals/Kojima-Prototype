@@ -186,8 +186,11 @@ public class PlayerCameraScript : MonoBehaviour {
             freeCamTimer -= Time.deltaTime;
         }
 
+        float distanceMultiplier = 1;
 
-        Vector3 backwards = new Vector3(0, 0, -(distanceFromPlayer));
+        distanceMultiplier += Mathf.Abs(mainPlayer.transform.up.x * 2);
+
+        Vector3 backwards = new Vector3(0, 0, -(distanceFromPlayer * distanceMultiplier));
         Quaternion rot = Quaternion.Euler(curPos);
 
         Vector3 targetPos = Vector3.zero;
@@ -210,8 +213,10 @@ public class PlayerCameraScript : MonoBehaviour {
 
             //Debug.Log(Vector3.Distance(transform.position, mainPlayer.transform.position));
 
-            if (Vector3.Distance(transform.position, mainPlayer.transform.position) < 33)
+            if (Vector3.Distance(transform.position, mainPlayer.transform.position) < 3)
                 curPos.x += 15 * Time.deltaTime;
+
+            
 
             targetPos = rH.point + rH.normal*0.25f;
         }

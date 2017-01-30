@@ -10,6 +10,8 @@ using System;
 [RequireComponent(typeof(CarResetter))]
 public class CarScript : MonoBehaviour
 {
+    CarSoundScript mySoundScript;
+
     [System.Serializable]
     public struct CarInfo
     {
@@ -18,6 +20,8 @@ public class CarScript : MonoBehaviour
 
         public float health, acceleration, turnSpeed, wheelSize;
         public AudioClip engineAudioClip, accelerationAudioClip;
+
+        public bool airControl;
 
         public CarInfo(float _health, float _acceleration, float _turnSpeed, float _wheelSize, DriveMode _driveMode, string engineSoundFilename = "Engine1", string accelerationSoundFileName = "Acceleration1")
         {
@@ -32,6 +36,8 @@ public class CarScript : MonoBehaviour
 
             accelerationAudioClip = Resources.Load<AudioClip>("Sounds/Acceleration/" + accelerationSoundFileName);
             Debug.Log("Sounds/Acceleration/" + accelerationSoundFileName);
+
+            airControl = true;
         }
     }
 
@@ -51,6 +57,8 @@ public class CarScript : MonoBehaviour
 
     [Tooltip("BL, BR, FL, FR")]
     public Transform[] wheels;
+    public GameObject wheelLandParticlePrefab;
+    ParticleSystem[] wheelLandParticles;
     public bool[] wheelIsGrounded;
 
     /// <summary>
@@ -83,6 +91,8 @@ public class CarScript : MonoBehaviour
     Vector3[] wheelLocalPositions;
 
     bool currentlySkidding = false;
+    float curSkidIntensity = 0;
+
     TrailRenderer[] skidMarkTrails;
     public GameObject skidMarkPrefab;
     Vector3 skidDirection;
@@ -100,6 +110,8 @@ public class CarScript : MonoBehaviour
     [SerializeField]
     bool drifting = false;
     Vector3 driftVelo;
+
+    float currentSpeedMultiplier = 1;
 
     float targetAngularDrag = 5;
 
@@ -141,11 +153,25 @@ public class CarScript : MonoBehaviour
 
         //Cache a reference to the CarSound script
         soundScript = GetComponent<CarSoundScript>();
+
+
+        //Create wheel land effects
+        wheelLandParticles = new ParticleSystem[wheels.Length];
+        for(int i=0; i<wheels.Length; i++)
+        {
+            wheelLandParticles[i] = Instantiate<GameObject>(wheelLandParticlePrefab).GetComponent<ParticleSystem>();
+            wheelLandParticles[i].transform.SetParent(wheels[i]);
+            wheelLandParticles[i].transform.localPosition = Vector3.zero;
+            wheelLandParticles[i].transform.localEulerAngles = new Vector3(-90, 0, 0);
+            wheelLandParticles[i].transform.localScale = Vector3.one;
+        }
+
+        mySoundScript = GetComponent<CarSoundScript>();
     }
 
     void Start()
     {
-        ApplyCarInfo(new CarInfo(100, 9, 12, 0.35f, CarInfo.DriveMode.AllWheels, "Engine1"));
+        ApplyCarInfo(new CarInfo(100, 15, 12, 0.35f, CarInfo.DriveMode.AllWheels, "Engine1"));
         CreateSkidMarkTrails();
 
         skidSmoke.Stop();
@@ -277,6 +303,38 @@ public class CarScript : MonoBehaviour
     // Update is called once per frame
     void FixedUpdate()
     {
+        Movement();
+
+        if (InMidAir)
+        {
+            curSkidIntensity = 0;
+
+            if (skidSmoke.isPlaying)
+            {
+                skidSmoke.Stop();
+            }
+
+            if(myInfo.airControl && Mathf.Abs(rb.velocity.y)>1)
+            {
+                AirControl();
+            }
+        }
+    }
+
+    public float GetSkidInfo()
+    {
+        return curSkidIntensity;
+    }
+
+    void AirControl()
+    {
+        Vector3 controlVelocity = new Vector3(-Input.GetAxisRaw("Vertical" + playerInputTag), Input.GetAxisRaw("Horizontal" + playerInputTag), 0);
+        controlVelocity = transform.TransformDirection(controlVelocity);
+        rb.AddTorque(controlVelocity * 20, ForceMode.Acceleration);
+    }
+
+    void Movement()
+    {
         float currentVelocity = rb.velocity.magnitude;
         currentWheelSpeed = currentVelocity * Vector3.Dot(rb.velocity.normalized, -transform.forward);
         ManageSkidMarkTrails();
@@ -287,14 +345,14 @@ public class CarScript : MonoBehaviour
             //Drifting
             drifting = Input.GetKey("joystick " + playerIndex + " button 1") && wheelIsGrounded[0] && wheelIsGrounded[1];
 
-            if(Input.GetKey("joystick " + playerIndex + " button 1"))
+            if (Input.GetKey("joystick " + playerIndex + " button 1"))
             {
                 skidDirection = transform.forward;
             }
 
             if (drifting)
             {
-                cancelHoriForce = 0;   
+                cancelHoriForce = 0;
             }
             else
             {
@@ -308,7 +366,7 @@ public class CarScript : MonoBehaviour
 
                 bool thisWheelCanDrive = false;
 
-                switch(myInfo.myDriveMode)
+                switch (myInfo.myDriveMode)
                 {
                     case CarInfo.DriveMode.AllWheels:
                         thisWheelCanDrive = true;
@@ -340,36 +398,43 @@ public class CarScript : MonoBehaviour
 
                 float forwardsMultiplier = Input.GetAxisRaw("Acceleration" + playerInputTag) + (-Input.GetAxisRaw("Brake" + playerInputTag));
 
+                //Adds some angular drag for each grounded wheel
+                if ((drifting && i > 1) || !drifting)
+                    rb.angularDrag += targetAngularDrag / 4;
+
                 if (thisWheelCanDrive)
                 {
-                    if ((drifting && i > 1) || !drifting)
-                        rb.angularDrag += targetAngularDrag/4;
-
                     if (forwardsMultiplier != 0)
                     {
                         Vector3 wheelForward = transform.forward;
-
-                        if(drifting && i<2)
-                        {
-                            wheelForward = skidDirection;
-                        }
 
                         Vector3 direction = Vector3.Cross(wheelRaycasts[i].normal, wheelForward);
                         direction = Vector3.Cross(direction, wheelRaycasts[i].normal);
 
                         Debug.DrawLine(wheels[i].transform.position, wheels[i].transform.position + direction * 5, Color.green);
-                        rb.AddForce(direction * myInfo.acceleration * Input.GetAxisRaw("Acceleration" + playerInputTag), ForceMode.Acceleration);
-                        rb.AddForce(-direction * myInfo.acceleration * Input.GetAxisRaw("Brake" + playerInputTag) * 0.55f, ForceMode.Acceleration);
 
-                        rb.AddForce(-wheelRaycasts[i].normal * currentWheelSpeed * 10);
-                        rb.AddForce(-Vector3.up * 10);
+                        Vector3 accelerationForce = direction * myInfo.acceleration * Input.GetAxisRaw("Acceleration" + playerInputTag);
+                        Vector3 brakeForce = -direction * myInfo.acceleration * Input.GetAxisRaw("Brake" + playerInputTag) * 0.55f;
+
+                        if (myInfo.myDriveMode == CarInfo.DriveMode.AllWheels)
+                        {
+                            accelerationForce *= 0.5f;
+                            brakeForce *= 0.5f;
+                        }
+
+                        rb.AddForce(accelerationForce, ForceMode.Acceleration);
+                        rb.AddForce(brakeForce, ForceMode.Acceleration);
 
                         rb.rotation = Quaternion.RotateTowards(rb.rotation, Quaternion.LookRotation(direction, wheelRaycasts[i].normal), 35 * Time.deltaTime);
                     }
 
                 }
 
-                if (i>1)
+                //Stabiliser forces
+                rb.AddForce(-wheelRaycasts[i].normal * currentWheelSpeed * 15);
+                rb.AddForce(-Vector3.up * 10);
+
+                if (i > 1)
                 {
                     float curTorqueSpeed = myInfo.turnSpeed * currentWheelSpeed;
 
@@ -381,7 +446,7 @@ public class CarScript : MonoBehaviour
                     }
                 }
 
-                
+
             }
         }
     }
@@ -502,9 +567,10 @@ public class CarScript : MonoBehaviour
 
         float speedSimilarity = Mathf.Abs(Vector3.Dot(transform.forward, rb.velocity));
 
-        if (Mathf.Abs(localVelo.x) > 3f)
+        if (Mathf.Abs(localVelo.x) > 4f)
         {
             currentlySkidding = true;
+            curSkidIntensity = Mathf.Abs(localVelo.x);
 
             if (!skidSmoke.isPlaying)
                 skidSmoke.Play();
@@ -512,6 +578,7 @@ public class CarScript : MonoBehaviour
         else
         {
             currentlySkidding = false;
+            curSkidIntensity = 0;
 
             if (skidSmoke.isPlaying)
                 skidSmoke.Stop();
@@ -526,8 +593,9 @@ public class CarScript : MonoBehaviour
     bool isWheelGrounded(Transform wheel, int index)
     {
         bool ret;
+        bool previouslyGrounded = wheelIsGrounded[index];
 
-        ret = Physics.SphereCast(wheel.transform.position, myInfo.wheelSize * 0.3f, -transform.up, out wheelRaycasts[index], myInfo.wheelSize, LayerMask.GetMask("Default"), QueryTriggerInteraction.Ignore);
+        ret = Physics.SphereCast(wheel.transform.position, myInfo.wheelSize * 0.15f, -transform.up, out wheelRaycasts[index], myInfo.wheelSize, LayerMask.GetMask("Default"), QueryTriggerInteraction.Ignore);
         
         if(ret)
         {
@@ -538,6 +606,19 @@ public class CarScript : MonoBehaviour
             Debug.DrawLine(wheel.transform.position, wheel.transform.position -transform.up* myInfo.wheelSize, Color.blue, 0.02f);
         }
 
+        if(ret && !previouslyGrounded)
+        {
+            WheelHasLanded(index);
+        }
+
         return ret;
+    }
+
+    void WheelHasLanded(int index)
+    {
+        mySoundScript.WheelHasLanded();
+
+        if (rb.velocity.y < -1)
+            wheelLandParticles[index].Play();
     }
 }

@@ -1,61 +1,67 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class MainHUDScript : MonoBehaviour
+namespace Bam
 {
-    public static MainHUDScript singleton;
-    public PlayerHUDScript[] playerHUDs;
-    public GameObject playerHUDPrefab;
- 
-
-
-    void Awake()
+    public class MainHUDScript : MonoBehaviour
     {
-        singleton = this;
-        playerHUDs = new PlayerHUDScript[4];
+        public static MainHUDScript singleton;
+        public PlayerHUDScript[] playerHUDs;
+        public GameObject playerHUDPrefab;
 
-        for(int i = 0; i < 4; i++)
+
+
+        void Awake()
         {
-            GameObject newPlayerHUD = Instantiate(playerHUDPrefab) as GameObject;
-            playerHUDs[i] = newPlayerHUD.GetComponent<PlayerHUDScript>();
+            singleton = this;
+            playerHUDs = new PlayerHUDScript[4];
+
+            for (int i = 0; i < Kojima.GameController.s_ncurrentPlayers; i++)
+            {
+                GameObject newPlayerHUD = Instantiate(playerHUDPrefab) as GameObject;
+                playerHUDs[i] = newPlayerHUD.GetComponent<PlayerHUDScript>();
+            }
         }
-    }
 
-	// Use this for initialization
-	void Start () 
-    {
-	    
-	}
-	
-	// Update is called once per frame
-	void Update ()
-    {
-	
-	}
-
-    public void UpdateTimer(int mins, int seconds)
-    {
-        for(int i = 0; i < 4; i++)
+        // Use this for initialization
+        void Start()
         {
-            playerHUDs[i].DisplayTimer(mins, seconds);
+
         }
-    }
 
-    public void UpdateScore(int score, int playerNum)
-    {
-        playerHUDs[playerNum - 1].DisplayScore(score);
-    }
-
-    public void ToggleHUDLights(bool lightsOn)
-    {
-        for (int i = 0; i < 4; i++)
+        // Update is called once per frame
+        void Update()
         {
-            playerHUDs[i].ToggleLights(lightsOn);
-        }
-    }
 
-    public void ShowNextItem(int playerNum, string itemName)
-    {
-        playerHUDs[playerNum - 1].ShowNextItem(itemName);
+        }
+
+        public void UpdateTimer(int mins, int seconds)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                playerHUDs[i].DisplayTimer(mins, seconds);
+            }
+        }
+
+        public void UpdateScore(int score, int playerNum)
+        {
+            playerHUDs[playerNum - 1].DisplayScore(score);
+        }
+
+        public void ToggleHUDLights(bool lightsOn)
+        {
+            for (int i = 0; i < playerHUDs.Length; i++)
+            {
+                if (playerHUDs[i])
+                {
+                    playerHUDs[i].ToggleLights(lightsOn);
+                }
+            }
+        }
+
+        public void ShowNextItem(int playerNum, string itemName)
+        {
+            playerHUDs[playerNum - 1].ShowNextItem(itemName);
+        }
     }
 }

@@ -6,45 +6,48 @@ using UnityEngine;
 using System.Collections;
 using System;
 
-public class SabotageController : MonoBehaviour
+namespace Bam
 {
-    public int ChaseCar { get; set; }
-    public static SabotageController Singleton { get { return m_singleton; } }
-    private static SabotageController m_singleton;
-    //public GameObject m_projectorObject;
-    public bool m_firstFrame = true;
-
-    protected void Start()
+    public class SabotageController : MonoBehaviour
     {
-        if (Singleton != null)
-            return;
-        m_singleton = this;
+        public int ChaseCar { get; set; }
+        public static SabotageController Singleton { get { return m_singleton; } }
+        private static SabotageController m_singleton;
+        //public GameObject m_projectorObject;
+        public bool m_firstFrame = true;
 
-        /*Set up the camera*/
-        CameraManagerScript.ScreenSetup screenSetup = new CameraManagerScript.ScreenSetup(1);
-        screenSetup.cameras = 1;
-        screenSetup.camInfos = new PlayerCameraScript.CameraInfo[4];
-        screenSetup.camInfos[0].followThesePlayers = new bool[4];
-        for (int i = 0; i < GameController.currentPlayers; ++i) screenSetup.camInfos[0].followThesePlayers[i] = ChaseCar != i;
-        screenSetup.camInfos[0].viewStyle = PlayerCameraScript.ViewStyles.Overhead;
-        screenSetup.camInfos[0].positionOnScreen = PlayerCameraScript.ScreenPositions.FullScreen;
-        CameraManagerScript.singleton.NewScreenSetup(screenSetup);
-    }
-
-    protected void Update()
-    {
-        /*Hacky work around setup ordering*/
-        if (m_firstFrame)
+        protected void Start()
         {
-            //Camera ref_mainCam = CameraManagerScript.singleton.playerCameras[0].Cam;
-            //m_projectorObject.transform.SetParent(ref_mainCam.transform);
-            ///*Attach the projector to the overhead camera*/
-            //m_projectorObject.transform.localRotation = Quaternion.identity;
-            //m_projectorObject.transform.localPosition = Vector3.zero;
+            if (Singleton != null)
+                return;
+            m_singleton = this;
+
+            /*Set up the camera*/
+            Kojima.CameraManagerScript.screenSetup_s screenSetup = new Kojima.CameraManagerScript.screenSetup_s(1);
+            screenSetup.cameras = 1;
+            screenSetup.camInfos = new PlayerCameraScript.CameraInfo[4];
+            screenSetup.camInfos[0].m_followThesePlayers = new bool[4];
+            for (int i = 0; i < Kojima.GameController.s_ncurrentPlayers; ++i) screenSetup.camInfos[0].m_followThesePlayers[i] = ChaseCar != i;
+            screenSetup.camInfos[0].m_viewStyle = PlayerCameraScript.viewStyles_e.overhead;
+            screenSetup.camInfos[0].m_positionOnScreen = PlayerCameraScript.screenPositions_e.fullScreen;
+            Kojima.CameraManagerScript.singleton.NewScreenSetup(screenSetup);
+        }
+
+        protected void Update()
+        {
+            /*Hacky work around setup ordering*/
+            if (m_firstFrame)
+            {
+                //Camera ref_mainCam = CameraManagerScript.singleton.playerCameras[0].Cam;
+                //m_projectorObject.transform.SetParent(ref_mainCam.transform);
+                ///*Attach the projector to the overhead camera*/
+                //m_projectorObject.transform.localRotation = Quaternion.identity;
+                //m_projectorObject.transform.localPosition = Vector3.zero;
 
 
-            /*Add off-screen death script to the ChaseCar*/
-            GameController.singleton.players[ChaseCar].gameObject.AddComponent<KillIfOffscreen>();
+                /*Add off-screen death script to the ChaseCar*/
+                Kojima.GameController.s_singleton.m_players[ChaseCar].gameObject.AddComponent<KillIfOffscreen>();
+            }
         }
     }
 }

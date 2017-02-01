@@ -1,30 +1,33 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-[RequireComponent(typeof(CarScript))]
-[RequireComponent(typeof(CapsuleCollider))]
-public class KillIfOffscreen : MonoBehaviour
+namespace Bam
 {
-    CapsuleCollider m_collider;
-    void Awake  ()
+    [RequireComponent(typeof(Kojima.CarScript))]
+    [RequireComponent(typeof(CapsuleCollider))]
+    public class KillIfOffscreen : MonoBehaviour
     {
-        m_collider = GetComponent<CapsuleCollider>();
-    }
+        CapsuleCollider m_collider;
+        void Awake()
+        {
+            m_collider = GetComponent<CapsuleCollider>();
+        }
 
 
-    // Use this for initialization
-    void Start ()
-    {
-	
-	}
-	
-	// Update is called once per frame
-	void Update ()
-    {
-        Plane[] planes = GeometryUtility.CalculateFrustumPlanes(CameraManagerScript.singleton.playerCameras[0].Cam);
-        if (!GeometryUtility.TestPlanesAABB(planes, m_collider.bounds))
+        // Use this for initialization
+        void Start()
         {
 
+        }
+
+        // Update is called once per frame
+        void Update()
+        {
+            Plane[] planes = GeometryUtility.CalculateFrustumPlanes(Kojima.CameraManagerScript.singleton.playerCameras[0].Cam);
+            if (!GeometryUtility.TestPlanesAABB(planes, m_collider.bounds))
+            {
+
+            }
         }
     }
 }

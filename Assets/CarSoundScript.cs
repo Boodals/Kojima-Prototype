@@ -1,79 +1,82 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class CarSoundScript : MonoBehaviour
+namespace Bam
 {
-    CarScript myCar;
-
-    //Audio
-    AudioSource engine, acceleration, otherSounds, skidSounds;
-    public AudioClip smallImpact, mediumImpact;
-    public AudioClip skidSnd;
-
-    void Awake()
+    public class CarSoundScript : MonoBehaviour
     {
-        //Create audio sources
-        engine = gameObject.AddComponent<AudioSource>();
-        engine.spatialBlend = 0;
-        engine.loop = true;
-        engine.volume = 0.05f;
+        Kojima.CarScript m_myCar;
 
-        acceleration = gameObject.AddComponent<AudioSource>();
-        acceleration.spatialBlend = 0;
-        acceleration.loop = true;
+        //Audio
+        AudioSource m_engine, m_acceleration, m_otherSounds, m_skidSounds;
+        public AudioClip m_smallImpact, m_mediumImpact;
+        public AudioClip m_skidSnd;
 
-        otherSounds = gameObject.AddComponent<AudioSource>();
-        otherSounds.spatialBlend = 0;
-
-        skidSounds = gameObject.AddComponent<AudioSource>();
-        skidSounds.loop = true;
-        skidSounds.clip = skidSnd;
-        skidSounds.volume = 0;
-        skidSounds.Play();
-    }
-
-    // Use this for initialization
-    void Start()
-    {
-        myCar = GetComponent<CarScript>();
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        HandleSkidding();
-    }
-
-    void HandleSkidding()
-    {
-        float skidIntensity = myCar.GetSkidInfo();
-        skidIntensity = Mathf.Clamp(skidIntensity, 0, 1.1f);
-
-        skidSounds.volume = Mathf.Lerp(skidSounds.volume, skidIntensity * 0.5f, 5 * Time.deltaTime);
-        //skidSounds.pitch = Mathf.Lerp(skidSounds.pitch, 0.8f + (skidIntensity * 0.3f), 0.1f * Time.deltaTime);
-
-        if (myCar.InMidAir)
+        void Awake()
         {
-            //skidSounds.volume = 0;
+            //Create audio sources
+            m_engine = gameObject.AddComponent<AudioSource>();
+            m_engine.spatialBlend = 0.0f;
+            m_engine.loop = true;
+            m_engine.volume = 0.0f;
+
+            m_acceleration = gameObject.AddComponent<AudioSource>();
+            m_acceleration.spatialBlend = 0.0f;
+            m_acceleration.loop = true;
+
+            m_otherSounds = gameObject.AddComponent<AudioSource>();
+            m_otherSounds.spatialBlend = 0.0f;
+
+            m_skidSounds = gameObject.AddComponent<AudioSource>();
+            m_skidSounds.loop = true;
+            m_skidSounds.clip = m_skidSnd;
+            m_skidSounds.volume = 0.0f;
+            m_skidSounds.Play();
         }
-    }
 
-    void FixedUpdate()
-    {
+        // Use this for initialization
+        void Start()
+        {
+            m_myCar = GetComponent<Kojima.CarScript>();
+        }
 
-    }
+        // Update is called once per frame
+        void Update()
+        {
+            HandleSkidding();
+        }
 
-    public void WheelHasLanded(float intensity = 1)
-    {
-        otherSounds.PlayOneShot(smallImpact, 0.25f);
-    }
+        void HandleSkidding()
+        {
+            float skidIntensity = m_myCar.GetSkidInfo();
+            skidIntensity = Mathf.Clamp(skidIntensity, 0, 1.1f);
 
-    public void SetSounds(AudioClip _engine, AudioClip _acceleration)
-    {
-        engine.clip = _engine;
-        engine.Play();
+            m_skidSounds.volume = Mathf.Lerp(m_skidSounds.volume, skidIntensity * 0.5f, 5 * Time.deltaTime);
+            //skidSounds.pitch = Mathf.Lerp(skidSounds.pitch, 0.8f + (skidIntensity * 0.3f), 0.1f * Time.deltaTime);
 
-        acceleration.clip = _acceleration;
-        acceleration.Stop();
+            if (m_myCar.InMidAir)
+            {
+                //skidSounds.volume = 0;
+            }
+        }
+
+        void FixedUpdate()
+        {
+
+        }
+
+        public void WheelHasLanded(float intensity = 1)
+        {
+            //otherSounds.PlayOneShot(smallImpact, 0.25f);
+        }
+
+        public void SetSounds(AudioClip _engine, AudioClip _acceleration)
+        {
+            m_engine.clip = _engine;
+            m_engine.Play();
+
+            m_acceleration.clip = _acceleration;
+            m_acceleration.Stop();
+        }
     }
 }
